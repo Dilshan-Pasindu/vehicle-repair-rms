@@ -9,16 +9,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-
-import { Ionicons } from '@expo/vector-icons';
-
-const BRAND = '#FF7300';
-const WHITE = '#FFFFFF';
-const BG = '#F4F5F7';
-const CARD = '#FFFFFF';
-const TEXT = '#111827';
-const MUTED = '#6B7280';
-const BORDER = '#E5E7EB';
+import { Car, ChevronRight, Calendar, Settings } from 'lucide-react-native';
+import { Colors, Spacing, CustomBorders, Shadows } from '../../constants/theme';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -29,12 +21,12 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={WHITE} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.light.surface} />
 
       {/* HEADER */}
       <View style={styles.header}>
-        <View>
-
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.greeting}>Good Morning,</Text>
           <Text style={styles.userName}>Seneja Thehansi</Text>
         </View>
         <TouchableOpacity style={styles.avatarBox} onPress={handleLogout} activeOpacity={0.7}>
@@ -47,10 +39,16 @@ export default function DashboardScreen() {
         {/* STATS ROW */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
+            <View style={styles.statIconBox}>
+                <Car size={18} color={Colors.light.primary} />
+            </View>
             <Text style={styles.statValue}>2</Text>
             <Text style={styles.statLabel}>Vehicles</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: '#ECFDF5' }]}>
+                <Calendar size={18} color="#059669" />
+            </View>
             <Text style={styles.statValue}>1</Text>
             <Text style={styles.statLabel}>Active Appt.</Text>
           </View>
@@ -72,13 +70,13 @@ export default function DashboardScreen() {
           >
             <View style={styles.cardRow}>
               <View style={styles.iconBox}>
-                <Ionicons name="car-sport" size={24} color={TEXT} />
+                <Car size={24} color={Colors.light.text} />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitle}>Honda Civic 2020</Text>
                 <Text style={styles.cardSubtitle}>CBA-1234 • Last Serviced: Oct 12, 2024</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              <ChevronRight size={20} color={Colors.light.textMuted} />
             </View>
           </TouchableOpacity>
         </View>
@@ -104,8 +102,11 @@ export default function DashboardScreen() {
             <Text style={styles.apptTitle}>Full Service & Oil Change</Text>
             <Text style={styles.apptSub}>For Honda Civic (CBA-1234)</Text>
             <View style={styles.garageBox}>
-              <Text style={styles.garageName}>AutoCare Garage Colombo</Text>
-              <Text style={styles.garageAddress}>123 Main St, Colombo 03</Text>
+              <Settings size={16} color={Colors.light.textMuted} style={{ marginRight: 8, marginTop: 2 }} />
+              <View>
+                <Text style={styles.garageName}>AutoCare Garage Colombo</Text>
+                <Text style={styles.garageAddress}>123 Main St, Colombo 03</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -116,75 +117,82 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
+  safe: { flex: 1, backgroundColor: Colors.light.background },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: WHITE,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
+    backgroundColor: Colors.light.surface,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.four,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: Colors.light.border,
   },
-  greeting: { fontSize: 13, color: MUTED, fontWeight: '600', marginBottom: 2 },
-  userName: { fontSize: 20, color: TEXT, fontWeight: '800', letterSpacing: -0.3 },
+  headerTextContainer: { flex: 1 },
+  greeting: { fontSize: 13, color: Colors.light.textMuted, fontWeight: '600', marginBottom: 2 },
+  userName: { fontSize: 20, color: Colors.light.text, fontWeight: '800', letterSpacing: -0.3 },
   avatarBox: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: '#FFF4EC',
+    borderRadius: CustomBorders.radius.md,
+    backgroundColor: Colors.light.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255,115,0,0.2)',
+    borderColor: 'rgba(249, 115, 22, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 16, fontWeight: '800', color: BRAND },
+  avatarText: { fontSize: 16, fontWeight: '800', color: Colors.light.primary },
 
   scroll: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: Spacing.four,
+    paddingBottom: Spacing.six,
   },
 
   statsGrid: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 28,
+    gap: Spacing.three,
+    marginBottom: Spacing.five,
   },
   statCard: {
     flex: 1,
-    backgroundColor: CARD,
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: Colors.light.surface,
+    borderRadius: CustomBorders.radius.lg,
+    padding: Spacing.four,
     borderWidth: 1,
-    borderColor: BORDER,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: Colors.light.border,
+    ...Shadows.sm,
   },
-  statValue: { fontSize: 32, fontWeight: '900', color: TEXT, marginBottom: 4 },
-  statLabel: { fontSize: 12, color: MUTED, fontWeight: '600', textTransform: 'uppercase' },
+  statIconBox: {
+      width: 36,
+      height: 36,
+      borderRadius: CustomBorders.radius.sm,
+      backgroundColor: Colors.light.primaryMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.three,
+  },
+  statValue: { fontSize: 32, fontWeight: '900', color: Colors.light.text, marginBottom: 4 },
+  statLabel: { fontSize: 12, color: Colors.light.textMuted, fontWeight: '600', textTransform: 'uppercase' },
 
-  section: { marginBottom: 32 },
+  section: { marginBottom: Spacing.five },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginBottom: 16,
+    marginBottom: Spacing.three,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: TEXT },
-  linkText: { fontSize: 14, fontWeight: '700', color: BRAND },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: Colors.light.text },
+  linkText: { fontSize: 14, fontWeight: '700', color: Colors.light.primary },
 
   card: {
-    backgroundColor: CARD,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: CustomBorders.radius.lg,
+    padding: Spacing.three,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: Colors.light.border,
+    ...Shadows.sm,
   },
   cardRow: {
     flexDirection: 'row',
@@ -193,27 +201,26 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    borderRadius: CustomBorders.radius.sm,
+    backgroundColor: Colors.light.background,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: Spacing.three,
   },
-  iconText: { fontSize: 24 },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: TEXT, marginBottom: 4 },
-  cardSubtitle: { fontSize: 13, color: MUTED, fontWeight: '500' },
-  chevron: { fontSize: 22, color: '#9CA3AF', fontWeight: 'bold' },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  cardSubtitle: { fontSize: 13, color: Colors.light.textMuted, fontWeight: '500' },
 
   /* Appt Card */
   apptCard: {
-    backgroundColor: CARD,
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: Colors.light.surface,
+    borderRadius: CustomBorders.radius.lg,
+    padding: Spacing.four,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: Colors.light.border,
     borderLeftWidth: 4,
-    borderLeftColor: BRAND,
+    borderLeftColor: Colors.light.primary,
+    ...Shadows.sm,
   },
   apptHeader: {
     flexDirection: 'row',
@@ -231,20 +238,21 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
   statusText: { fontSize: 12, fontWeight: '700', color: '#047857' },
-  apptDate: { fontSize: 13, fontWeight: '700', color: TEXT },
+  apptDate: { fontSize: 13, fontWeight: '700', color: Colors.light.text },
 
-  divider: { height: 1, backgroundColor: BORDER, marginVertical: 16 },
+  divider: { height: 1, backgroundColor: Colors.light.border, marginVertical: Spacing.three },
 
-  apptTitle: { fontSize: 17, fontWeight: '800', color: TEXT, marginBottom: 4 },
-  apptSub: { fontSize: 14, color: MUTED, fontWeight: '500', marginBottom: 16 },
+  apptTitle: { fontSize: 17, fontWeight: '800', color: Colors.light.text, marginBottom: 4 },
+  apptSub: { fontSize: 14, color: Colors.light.textMuted, fontWeight: '500', marginBottom: Spacing.three },
 
   garageBox: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
+    flexDirection: 'row',
+    backgroundColor: Colors.light.background,
+    borderRadius: CustomBorders.radius.md,
+    padding: Spacing.three,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: Colors.light.border,
   },
-  garageName: { fontSize: 14, fontWeight: '700', color: TEXT, marginBottom: 2 },
-  garageAddress: { fontSize: 13, color: MUTED },
+  garageName: { fontSize: 14, fontWeight: '700', color: Colors.light.text, marginBottom: 2 },
+  garageAddress: { fontSize: 13, color: Colors.light.textMuted },
 });

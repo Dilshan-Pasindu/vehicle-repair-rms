@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { MapPin, Plus } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -10,14 +10,7 @@ import {
   StatusBar,
   TouchableOpacity,
 } from 'react-native';
-
-const BRAND   = '#FF7300';
-const WHITE   = '#FFFFFF';
-const BG      = '#F4F5F7';
-const CARD    = '#FFFFFF';
-const TEXT    = '#111827';
-const MUTED   = '#6B7280';
-const BORDER  = '#E5E7EB';
+import { Colors, Spacing, CustomBorders, Shadows } from '../../constants/theme';
 
 export default function AppointmentsScreen() {
   const router = useRouter();
@@ -60,7 +53,7 @@ export default function AppointmentsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={BG} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.light.background} />
       
       {/* HEADER */}
       <View style={styles.header}>
@@ -70,7 +63,8 @@ export default function AppointmentsScreen() {
           activeOpacity={0.7}
           onPress={() => router.push('/tabs/explore' as any)}
         >
-          <Text style={styles.addBtnText}>+ Book</Text>
+          <Plus size={14} color={Colors.light.surface} style={{ marginRight: 4 }} />
+          <Text style={styles.addBtnText}>Book</Text>
         </TouchableOpacity>
       </View>
 
@@ -104,13 +98,13 @@ export default function AppointmentsScreen() {
                 styles.statusBadge,
                 appt.status === 'Confirmed' && { backgroundColor: '#ECFDF5' },
                 appt.status === 'Pending'   && { backgroundColor: '#FFFBEB' },
-                appt.status === 'Completed' && { backgroundColor: '#F3F4F6' },
+                appt.status === 'Completed' && { backgroundColor: Colors.light.background },
               ]}>
                 <Text style={[
                   styles.statusText,
                   appt.status === 'Confirmed' && { color: '#047857' },
                   appt.status === 'Pending'   && { color: '#D97706' },
-                  appt.status === 'Completed' && { color: '#4B5563' },
+                  appt.status === 'Completed' && { color: Colors.light.textMuted },
                 ]}>{appt.status}</Text>
               </View>
             </View>
@@ -122,7 +116,7 @@ export default function AppointmentsScreen() {
               <Text style={styles.apptVehicle}>{appt.vehicle}</Text>
               
               <View style={styles.garageBox}>
-                <Ionicons name="location-sharp" size={14} color={TEXT} />
+                <MapPin size={14} color={Colors.light.text} />
                 <Text style={styles.garageText}>{appt.garage}</Text>
               </View>
             </View>
@@ -151,63 +145,62 @@ export default function AppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
+  safe: { flex: 1, backgroundColor: Colors.light.background },
   
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    backgroundColor: WHITE,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.three,
+    backgroundColor: Colors.light.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: Colors.light.border,
   },
-  headerTitle: { fontSize: 24, fontWeight: '900', color: TEXT, letterSpacing: -0.5 },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: Colors.light.text, letterSpacing: -0.5 },
   addBtn: {
-    backgroundColor: BRAND,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 10,
+    borderRadius: CustomBorders.radius.md,
   },
-  addBtnText: { fontSize: 13, fontWeight: '700', color: WHITE },
+  addBtnText: { fontSize: 13, fontWeight: '700', color: Colors.light.surface },
 
   tabContainer: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 8,
+    marginHorizontal: Spacing.four,
+    backgroundColor: Colors.light.border,
+    borderRadius: CustomBorders.radius.md,
     padding: 4,
-    marginBottom: 20,
+    marginBottom: Spacing.four,
+    marginTop: Spacing.four,
   },
   tabBtn: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 6,
+    borderRadius: CustomBorders.radius.sm,
   },
-  tabBtnActive: { backgroundColor: WHITE, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
-  tabText: { fontSize: 13, fontWeight: '600', color: MUTED },
-  tabTextActive: { color: TEXT, fontWeight: '800' },
+  tabBtnActive: { backgroundColor: Colors.light.surface, ...Shadows.sm },
+  tabText: { fontSize: 14, fontWeight: '600', color: Colors.light.textMuted },
+  tabTextActive: { color: Colors.light.text, fontWeight: '800' },
 
   scroll: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    gap: 16,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.six,
+    gap: Spacing.three,
   },
 
   apptCard: {
-    backgroundColor: CARD,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: CustomBorders.radius.lg,
+    padding: Spacing.four,
     borderWidth: 1,
-    borderColor: BORDER,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: Colors.light.border,
+    ...Shadows.md,
   },
   apptHeader: {
     flexDirection: 'row',
@@ -215,64 +208,66 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   dateTimeBadge: {
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 12,
+    backgroundColor: Colors.light.background,
+    paddingHorizontal: Spacing.three,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: CustomBorders.radius.md,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: Colors.light.border,
   },
-  dateText: { fontSize: 13, fontWeight: '800', color: TEXT, marginBottom: 2 },
-  timeText: { fontSize: 12, color: BRAND, fontWeight: '700' },
+  dateText: { fontSize: 13, fontWeight: '800', color: Colors.light.text, marginBottom: 2 },
+  timeText: { fontSize: 12, color: Colors.light.primary, fontWeight: '700' },
   
   statusBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: Spacing.two,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: CustomBorders.radius.sm,
   },
   statusText: { fontSize: 11, fontWeight: '800' },
 
-  divider: { height: 1, backgroundColor: BORDER, marginVertical: 16 },
+  divider: { height: 1, backgroundColor: Colors.light.border, marginVertical: Spacing.three },
 
-  apptBody: { marginBottom: 16 },
-  apptTitle: { fontSize: 17, fontWeight: '800', color: TEXT, marginBottom: 4 },
-  apptVehicle: { fontSize: 13, color: MUTED, fontWeight: '500', marginBottom: 12 },
+  apptBody: { marginBottom: Spacing.three },
+  apptTitle: { fontSize: 17, fontWeight: '800', color: Colors.light.text, marginBottom: 4 },
+  apptVehicle: { fontSize: 13, color: Colors.light.textMuted, fontWeight: '500', marginBottom: Spacing.three },
   
   garageBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.light.background,
     padding: 10,
-    borderRadius: 8,
+    borderRadius: CustomBorders.radius.md,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: Colors.light.border,
   },
 
-  garageText: { fontSize: 13, fontWeight: '600', color: TEXT },
+  garageText: { fontSize: 13, fontWeight: '600', color: Colors.light.text },
 
   actionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.three,
   },
   actionBtnOutline: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: CustomBorders.radius.md,
     borderWidth: 1.5,
-    borderColor: BORDER,
+    borderColor: Colors.light.border,
   },
-  actionBtnTextOutline: { fontSize: 13, fontWeight: '700', color: TEXT },
+  actionBtnTextOutline: { fontSize: 14, fontWeight: '700', color: Colors.light.text },
   actionBtnPrimary: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: BRAND,
+    borderRadius: CustomBorders.radius.md,
+    backgroundColor: Colors.light.primary,
+    ...Shadows.sm,
+    shadowColor: Colors.light.primary,
   },
-  actionBtnTextPrimary: { fontSize: 13, fontWeight: '700', color: WHITE },
+  actionBtnTextPrimary: { fontSize: 14, fontWeight: '700', color: Colors.light.surface },
 
   emptyState: { alignItems: 'center', marginTop: 40 },
-  emptyText: { color: MUTED, fontSize: 14, fontWeight: '500' },
+  emptyText: { color: Colors.light.textMuted, fontSize: 14, fontWeight: '500' },
 });

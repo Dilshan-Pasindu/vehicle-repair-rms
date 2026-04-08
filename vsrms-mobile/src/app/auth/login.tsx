@@ -14,18 +14,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { Colors, Spacing, CustomBorders, Shadows } from '../../constants/theme';
+import { Eye, EyeOff, ShieldCheck, Mail, Lock } from 'lucide-react-native';
 
-// WSO2 / Asgardeo brand palette
-const BRAND   = '#FF7300';   // WSO2 orange
-const BRAND_D = '#E05F00';   // darker shade for pressed
-const WHITE   = '#FFFFFF';
-const BG      = '#F5F5F5';
-const CARD    = '#FFFFFF';
-const TEXT    = '#1A1A2E';
-const MUTED   = '#6B7280';
-const BORDER  = '#D1D5DB';
-const FOCUS   = '#FF7300';
-const DIVIDER = '#E5E7EB';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -70,7 +61,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={BG} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.light.background} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -83,10 +74,7 @@ export default function LoginScreen() {
             {/* Logo / Brand */}
             <View style={styles.brandRow}>
               <View style={styles.logoBox}>
-                <View style={styles.logoInner}>
-                  <View style={styles.logoSquare} />
-                  <View style={[styles.logoSquare, styles.logoSquareOrange]} />
-                </View>
+                <ShieldCheck color={Colors.light.surface} size={28} />
               </View>
               <View>
                 <Text style={styles.appName}>VSRMS</Text>
@@ -136,28 +124,32 @@ export default function LoginScreen() {
             {/* Email */}
             <View style={styles.field}>
               <Text style={styles.label}>Email / Username</Text>
-              <TextInput
-                style={inputStyle('email')}
-                placeholder="Enter your email or username"
-                placeholderTextColor={MUTED}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setFocusField('email')}
-                onBlur={() => setFocusField(null)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={[styles.inputRow, focusField === 'email' && styles.inputFocused]}>
+                <Mail size={18} color={focusField === 'email' ? Colors.light.primary : Colors.light.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputFlat}
+                  placeholder="Enter your email or username"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setFocusField('email')}
+                  onBlur={() => setFocusField(null)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             </View>
 
             {/* Password */}
             <View style={styles.field}>
               <Text style={styles.label}>Password</Text>
               <View style={[styles.inputRow, focusField === 'password' && styles.inputFocused]}>
+                <Lock size={18} color={focusField === 'password' ? Colors.light.primary : Colors.light.textMuted} style={styles.inputIcon} />
                 <TextInput
                   style={styles.inputFlat}
                   placeholder="Enter your password"
-                  placeholderTextColor={MUTED}
+                  placeholderTextColor={Colors.light.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   onFocus={() => setFocusField('password')}
@@ -166,7 +158,7 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                 />
                 <TouchableOpacity onPress={() => setShowPwd(v => !v)} style={styles.eyeBtn}>
-                  <Text style={styles.eyeText}>{showPwd ? 'Hide' : 'Show'}</Text>
+                  {showPwd ? <EyeOff size={20} color={Colors.light.primary} /> : <Eye size={20} color={Colors.light.primary} />}
                 </TouchableOpacity>
               </View>
             </View>
@@ -184,7 +176,7 @@ export default function LoginScreen() {
               disabled={!canSubmit || loading}
             >
               {loading
-                ? <ActivityIndicator color={WHITE} size="small" />
+                ? <ActivityIndicator color={Colors.light.surface} size="small" />
                 : <Text style={styles.btnText}>Sign In</Text>}
             </TouchableOpacity>
 
@@ -203,13 +195,6 @@ export default function LoginScreen() {
               <Text style={styles.ssoBtnText}>Continue with Google</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.ssoBtn, { marginTop: 10 }]} activeOpacity={0.8}>
-              <View style={[styles.ssoIconBox, { backgroundColor: '#1877F2' }]}>
-                <Text style={[styles.ssoIconText, { color: WHITE }]}>f</Text>
-              </View>
-              <Text style={styles.ssoBtnText}>Continue with Facebook</Text>
-            </TouchableOpacity>
-
           </View>
 
           {/* Register link */}
@@ -222,6 +207,7 @@ export default function LoginScreen() {
 
           {/* Powered by */}
           <View style={styles.poweredRow}>
+            <ShieldCheck size={14} color={Colors.light.textMuted} style={{marginRight: 4}} />
             <Text style={styles.poweredText}>Secured by </Text>
             <Text style={styles.poweredBrand}>Asgardeo</Text>
             <Text style={styles.poweredText}> · WSO2</Text>
@@ -233,125 +219,107 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe:  { flex: 1, backgroundColor: BG },
+  safe:  { flex: 1, backgroundColor: Colors.light.background },
   flex:  { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.five,
   },
 
   /* Card */
   card: {
-    backgroundColor: CARD,
-    borderRadius: 12,
-    paddingHorizontal: 28,
-    paddingVertical: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 20,
-    elevation: 5,
+    backgroundColor: Colors.light.surface,
+    borderRadius: CustomBorders.radius.lg,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.five,
+    ...Shadows.lg,
   },
 
   /* Brand */
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    marginBottom: 22,
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
   },
   logoBox: {
     width: 48,
     height: 48,
-    borderRadius: 10,
-    backgroundColor: '#1A1A2E',
+    borderRadius: CustomBorders.radius.md,
+    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoInner: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: 24,
-    height: 24,
-    gap: 3,
-  },
-  logoSquare: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: WHITE,
-  },
-  logoSquareOrange: {
-    backgroundColor: BRAND,
-  },
-  appName:    { fontSize: 18, fontWeight: '800', color: TEXT, letterSpacing: 0.5 },
-  appTagline: { fontSize: 11, color: MUTED, fontWeight: '500', marginTop: 1 },
+  appName:    { fontSize: 20, fontWeight: '800', color: Colors.light.text, letterSpacing: 0.5 },
+  appTagline: { fontSize: 12, color: Colors.light.textMuted, fontWeight: '500', marginTop: 2 },
 
-  dividerLine: { height: 1, backgroundColor: DIVIDER, marginBottom: 24 },
+  dividerLine: { height: 1, backgroundColor: Colors.light.border, marginBottom: Spacing.three },
 
-  title:    { fontSize: 22, fontWeight: '800', color: TEXT, marginBottom: 6 },
-  subtitle: { fontSize: 13.5, color: MUTED, fontWeight: '400', marginBottom: 28, lineHeight: 20 },
+  title:    { fontSize: 24, fontWeight: '800', color: Colors.light.text, marginBottom: 6 },
+  subtitle: { fontSize: 14, color: Colors.light.textMuted, fontWeight: '400', marginBottom: Spacing.four, lineHeight: 20 },
 
   /* Form */
-  field:  { marginBottom: 18 },
-  label:  { fontSize: 13, fontWeight: '600', color: TEXT, marginBottom: 7 },
+  field:  { marginBottom: Spacing.three },
+  label:  { fontSize: 13, fontWeight: '600', color: Colors.light.text, marginBottom: 8 },
   input: {
-    height: 48,
+    height: 52,
     borderWidth: 1.5,
-    borderColor: BORDER,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: TEXT,
-    backgroundColor: WHITE,
+    borderColor: Colors.light.border,
+    borderRadius: CustomBorders.radius.md,
+    paddingHorizontal: Spacing.three,
+    fontSize: 15,
+    color: Colors.light.text,
+    backgroundColor: Colors.light.surface,
   },
-  inputFocused: { borderColor: FOCUS },
+  inputFocused: { borderColor: Colors.light.primary },
   inputRow: {
-    height: 48,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: BORDER,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    backgroundColor: WHITE,
+    borderColor: Colors.light.border,
+    borderRadius: CustomBorders.radius.md,
+    paddingHorizontal: Spacing.two,
+    backgroundColor: Colors.light.surface,
   },
-  inputFlat: { flex: 1, fontSize: 14, color: TEXT, height: '100%' },
-  eyeBtn:  { paddingLeft: 8 },
-  eyeText: { fontSize: 12, color: BRAND, fontWeight: '700' },
+  inputIcon: { marginLeft: 6, marginRight: 8 },
+  inputFlat: { flex: 1, fontSize: 15, color: Colors.light.text, height: '100%' },
+  eyeBtn:  { paddingHorizontal: 8 },
 
-  forgotRow: { alignSelf: 'flex-end', marginBottom: 24, marginTop: -6 },
-  forgotText: { fontSize: 13, color: BRAND, fontWeight: '600' },
+  forgotRow: { alignSelf: 'flex-end', marginBottom: Spacing.four, marginTop: -6 },
+  forgotText: { fontSize: 13, color: Colors.light.primary, fontWeight: '600' },
 
   /* Primary button */
   btnPrimary: {
-    height: 50,
-    backgroundColor: BRAND,
-    borderRadius: 8,
+    height: 54,
+    backgroundColor: Colors.light.primary,
+    borderRadius: CustomBorders.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: Spacing.four,
+    ...Shadows.md,
+    shadowColor: Colors.light.primary,
   },
-  btnMuted: { opacity: 0.5 },
-  btnText:  { color: WHITE, fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
+  btnMuted: { opacity: 0.6 },
+  btnText:  { color: Colors.light.surface, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
 
   /* OR divider */
-  orRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  orLine: { flex: 1, height: 1, backgroundColor: DIVIDER },
-  orText: { fontSize: 12, color: MUTED, fontWeight: '600' },
+  orRow:  { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.three },
+  orLine: { flex: 1, height: 1, backgroundColor: Colors.light.border },
+  orText: { fontSize: 12, color: Colors.light.textMuted, fontWeight: '600' },
 
   /* SSO */
   ssoBtn: {
-    height: 48,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: CustomBorders.radius.md,
     borderWidth: 1.5,
-    borderColor: BORDER,
-    backgroundColor: WHITE,
-    paddingHorizontal: 16,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.surface,
+    paddingHorizontal: Spacing.three,
   },
   ssoIconBox: {
     width: 26,
@@ -362,31 +330,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
-  ssoIconText: { fontSize: 14, fontWeight: '900', color: TEXT },
-  ssoBtnText:  { fontSize: 14, fontWeight: '600', color: TEXT },
+  ssoIconText: { fontSize: 14, fontWeight: '900', color: Colors.light.text },
+  ssoBtnText:  { fontSize: 15, fontWeight: '600', color: Colors.light.text },
 
   /* Footer */
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: Spacing.four,
   },
-  footerText: { fontSize: 13.5, color: MUTED },
-  footerLink: { fontSize: 13.5, color: BRAND, fontWeight: '700' },
+  footerText: { fontSize: 14, color: Colors.light.textMuted },
+  footerLink: { fontSize: 14, color: Colors.light.primary, fontWeight: '700' },
 
   poweredRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: Spacing.four,
   },
-  poweredText:  { fontSize: 11, color: '#9CA3AF' },
-  poweredBrand: { fontSize: 11, color: BRAND, fontWeight: '700' },
+  poweredText:  { fontSize: 12, color: Colors.light.textMuted },
+  poweredBrand: { fontSize: 12, color: Colors.light.primary, fontWeight: '700' },
 
-  personaRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  personaChip: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: BORDER, alignItems: 'center' },
-  personaChipActive: { borderColor: BRAND, backgroundColor: '#FFF4EC' },
-  personaText: { fontSize: 13, fontWeight: '700', color: MUTED },
-  personaTextActive: { color: BRAND },
+  personaRow: { flexDirection: 'row', gap: 10, marginTop: 4, flexWrap: 'wrap' },
+  personaChip: { flex: 1, minWidth: '45%', paddingVertical: 12, borderRadius: CustomBorders.radius.sm, borderWidth: 1.5, borderColor: Colors.light.border, alignItems: 'center' },
+  personaChipActive: { borderColor: Colors.light.primary, backgroundColor: Colors.light.primaryMuted },
+  personaText: { fontSize: 13, fontWeight: '700', color: Colors.light.textMuted },
+  personaTextActive: { color: Colors.light.primary },
 });
