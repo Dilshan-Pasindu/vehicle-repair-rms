@@ -14,6 +14,7 @@ const workshopSchema = new mongoose.Schema(
     address:         { type: String, required: true, trim: true },
     district:        { type: String, required: true, trim: true },
     servicesOffered: [{ type: String }],
+    description:     { type: String, trim: true },
     contactNumber:   { type: String, required: true, trim: true },
     imageUrl:        { type: String },
     averageRating:   { type: Number, default: 0, min: 0, max: 5 },

@@ -1,31 +1,29 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  StatusBar,
-  TouchableOpacity,
-  Dimensions
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-
-const { width } = Dimensions.get('window');
+import { useUsers } from '@/features/auth/queries/queries';
+import { useWorkshops } from '@/features/workshops/queries/queries';
+import { useAuth } from '@/hooks';
 
 export default function AdminOverviewScreen() {
   const router = useRouter();
   const { theme } = useUnistyles();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    router.replace('/auth/login' as any);
-  };
+  const { data: users,     isLoading: uLoad } = useUsers();
+  const { data: workshops, isLoading: wLoad } = useWorkshops();
+
+  const totalUsers     = users?.total ?? 0;
+  const totalWorkshops = workshops?.length ?? 0;
 
   const stats = [
-    { label: 'Total Revenue', value: 'LKR 2.4M', icon: 'cash-outline', color: '#10B981', trend: '+12%' },
-    { label: 'Platform Users', value: '1,284', icon: 'people-outline', color: '#3B82F6', trend: '+5.4%' },
-    { label: 'Active Garages', value: '42', icon: 'business-outline', color: theme.colors.brand, trend: '+2%' },
+    { label: 'Platform Users', value: uLoad ? '...' : String(totalUsers),     icon: 'people-outline'   as const, color: '#3B82F6' },
+    { label: 'Workshops',      value: wLoad ? '...' : String(totalWorkshops), icon: 'business-outline' as const, color: theme.colors.brand },
   ];
 
   return (
@@ -38,8 +36,8 @@ export default function AdminOverviewScreen() {
           <Text style={styles.headerSubtitle}>Platform Admin</Text>
           <Text style={styles.headerTitle}>Overview</Text>
         </View>
-        <TouchableOpacity style={styles.avatarBox} onPress={handleLogout} activeOpacity={0.7}>
-          <Text style={styles.avatarText}>AD</Text>
+        <TouchableOpacity style={styles.avatarBox} onPress={() => signOut()} activeOpacity={0.7}>
+          <Ionicons name="log-out-outline" size={20} color={theme.colors.surface} />
         </TouchableOpacity>
       </View>
 

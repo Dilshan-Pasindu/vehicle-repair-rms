@@ -1,86 +1,74 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { StorageService } from '@/services/storage.service';
-import { getMe, syncProfile } from '@/features/auth/api/auth.api';
-import { User } from '@/features/auth/types/auth.types';
+import { login as apiLogin, syncProfile, getMe } from '@/features/auth/api/auth.api';
+import { User, LoginPayload } from '@/features/auth/types/auth.types';
 
 interface AuthContextType {
-  signIn: (token: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  mockSignIn: (role: 'customer' | 'workshop_owner' | 'workshop_staff' | 'admin') => void;
   user: User | null;
   isLoading: boolean;
+  signIn: (token: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  login: (payload: LoginPayload) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const checkUser = async () => {
-    try {
-      const token = await StorageService.getToken();
-      if (token) {
-        // Sync profile to ensure MongoDB has the user and get back the internal User object
-        const userData = await getMe();
-        setUser(userData);
-      }
-    } catch (error) {
-      console.error('Failed to restore session', error);
-      // If unauthorized, clear token
-      await StorageService.removeToken();
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const qc = useQueryClient();
 
   useEffect(() => {
-    checkUser();
+    (async () => {
+      try {
+        const token = await StorageService.getToken();
+        if (token) {
+          const userData = await getMe();
+          setUser(userData);
+        }
+      } catch {
+        await StorageService.removeToken();
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
   const signIn = async (token: string) => {
     setIsLoading(true);
     try {
       await StorageService.setToken(token);
-      // After sign in, sync with backend to get the user record
       const userData = await syncProfile();
       setUser(userData);
-    } catch (error) {
-      console.error('Sign in sync failed', error);
-      throw error;
+    } catch (err) {
+      await StorageService.removeToken();
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const mockSignIn = (role: 'customer' | 'workshop_owner' | 'workshop_staff' | 'admin') => {
-    const mockUser: User = {
-      id: 'mock-id-' + role,
-      email: `${role}@mock.com`,
-      fullName: `Mock ${role.replace('_', ' ')}`,
-      role: role,
-    };
-    setUser(mockUser);
+  const login = async (payload: LoginPayload) => {
+    const res = await apiLogin(payload);
+    await signIn(res.access_token);
   };
 
   const signOut = async () => {
-    try {
-      await StorageService.removeToken();
-      setUser(null);
-    } catch (error) {
-      console.error('Sign out error', error);
-    }
+    await StorageService.removeToken();
+    qc.clear();
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ signIn, signOut, mockSignIn, user, isLoading }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signOut, login }}>
       {children}
     </AuthContext.Provider>
   );

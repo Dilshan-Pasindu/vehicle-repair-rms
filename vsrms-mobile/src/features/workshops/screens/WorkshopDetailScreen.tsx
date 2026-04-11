@@ -1,81 +1,116 @@
 import React from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MapPin, Phone, Clock, ShieldCheck } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { useWorkshop } from '../queries/queries';
 import { RatingStars } from '../components/RatingStars';
-import { WorkshopMap } from '../components/WorkshopMap';
-import { handleApiError } from '@/services/error.handler';
+import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 
 export function WorkshopDetailScreen({ id: propId }: { id?: string }) {
   const params = useLocalSearchParams<{ id: string }>();
   const id = propId || params.id;
   const router = useRouter();
   const { theme } = useUnistyles();
-  const { data: workshop, isLoading, isError, error } = useWorkshop(id!);
 
-  if (isLoading) return <ActivityIndicator style={{ flex: 1 }} size="large" />;
-  if (isError) return <Text style={{ color: 'red', padding: 20 }}>{handleApiError(error)}</Text>;
-  if (!workshop) return <Text style={{ padding: 20 }}>Workshop not found</Text>;
+  const { data: workshop, isLoading, isError, refetch } = useWorkshop(id!);
+
+  if (isLoading) return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <ActivityIndicator size="large" color={theme.colors.brand} />
+    </View>
+  );
+  if (isError)   return <ErrorScreen onRetry={refetch} />;
+  if (!workshop) return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: theme.colors.muted }}>Workshop not found.</Text>
+    </View>
+  );
 
   return (
-    <ScreenWrapper scroll>
-      <View style={styles.container}>
-        {workshop.imageUrl && (
-          <Image source={{ uri: workshop.imageUrl }} style={styles.heroImage} />
-        )}
-        
-        <View style={styles.header}>
+    <ScreenWrapper>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+
+        {/* HERO IMAGE */}
+        {workshop.imageUrl
+          ? <Image source={{ uri: workshop.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+          : (
+            <View style={[styles.heroImage, styles.heroPlaceholder]}>
+              <Ionicons name="business" size={56} color="#D1D5DB" />
+            </View>
+          )
+        }
+
+        {/* BACK BUTTON overlay */}
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+        </TouchableOpacity>
+
+        <View style={styles.body}>
+          {/* NAME + RATING */}
           <Text style={styles.name}>{workshop.name}</Text>
-          <RatingStars rating={workshop.averageRating || 0} size={20} />
-        </View>
-
-        <View style={styles.infoGrid}>
-          <View style={styles.infoItem}>
-            <MapPin size={18} color={theme.colors.brand} />
-            <Text style={styles.infoText}>{workshop.address?.city || 'Colombo'}</Text>
+          <View style={styles.ratingRow}>
+            <RatingStars rating={workshop.averageRating ?? 0} size={16} />
+            <Text style={styles.ratingText}>
+              {(workshop.averageRating ?? 0).toFixed(1)} ({workshop.totalReviews ?? 0} reviews)
+            </Text>
           </View>
-          <View style={styles.infoItem}>
-            <Phone size={18} color={theme.colors.brand} />
-            <Text style={styles.infoText}>{workshop.contactNumber || 'N/A'}</Text>
+
+          {/* INFO CHIPS */}
+          <View style={styles.infoGrid}>
+            <View style={styles.infoChip}>
+              <Ionicons name="location-outline" size={16} color={theme.colors.brand} />
+              <Text style={styles.infoChipText}>{workshop.district}</Text>
+            </View>
+            <View style={styles.infoChip}>
+              <Ionicons name="call-outline" size={16} color={theme.colors.brand} />
+              <Text style={styles.infoChipText}>{workshop.contactNumber ?? 'N/A'}</Text>
+            </View>
           </View>
-          <View style={styles.infoItem}>
-            <Clock size={18} color={theme.colors.brand} />
-            <Text style={styles.infoText}>08:00 AM - 06:00 PM</Text>
+
+          {/* ADDRESS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Address</Text>
+            <Text style={styles.sectionText}>{workshop.address}</Text>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.description}>
-            {workshop.description || "Professional vehicle repair and maintenance services with certified technicians and state-of-the-art diagnostic equipment."}
-          </Text>
-        </View>
+          {/* DESCRIPTION */}
+          {workshop.description ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.sectionText}>{workshop.description}</Text>
+            </View>
+          ) : null}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <WorkshopMap />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Specializations</Text>
-          <View style={styles.chipContainer}>
-            {workshop.specialization?.map(s => (
-              <View key={s} style={styles.chip}>
-                <ShieldCheck size={14} color={theme.colors.brand} />
-                <Text style={styles.chipText}>{s}</Text>
+          {/* SERVICES OFFERED */}
+          {(workshop.servicesOffered?.length ?? 0) > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Services Offered</Text>
+              <View style={styles.chipWrap}>
+                {workshop.servicesOffered!.map(s => (
+                  <View key={s} style={styles.serviceChip}>
+                    <Ionicons name="checkmark-circle-outline" size={14} color={theme.colors.brand} />
+                    <Text style={styles.serviceChipText}>{s}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </View>
+          )}
         </View>
+      </ScrollView>
 
-        <TouchableOpacity 
-          style={styles.bookButton}
-          onPress={() => router.push(`/tabs/workshops/book/${workshop._id}` as any)}
+      {/* STICKY BOOK BUTTON */}
+      <View style={styles.stickyFooter}>
+        <TouchableOpacity
+          style={styles.bookBtn}
+          onPress={() => router.push(`/tabs/schedule/book?workshopId=${workshop._id ?? workshop.id}` as any)}
+          activeOpacity={0.85}
         >
-          <Text style={styles.bookButtonText}>Book Appointment</Text>
+          <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.bookBtnText}>Book Appointment</Text>
         </TouchableOpacity>
       </View>
     </ScreenWrapper>
@@ -83,40 +118,53 @@ export function WorkshopDetailScreen({ id: propId }: { id?: string }) {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  container: { paddingBottom: 40 },
   heroImage: { width: '100%', height: 240 },
-  header: { padding: theme.spacing.md, gap: 8 },
-  name: { fontSize: theme.fonts.sizes.xxl, fontWeight: '800', color: theme.colors.text },
-  infoGrid: { 
-    padding: theme.spacing.md, 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border
+  heroPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6' },
+
+  backBtn: {
+    position: 'absolute', top: 52, left: 20,
+    width: 42, height: 42, borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
   },
-  infoItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontSize: theme.fonts.sizes.sm, color: theme.colors.muted, fontWeight: '500' },
-  section: { padding: theme.spacing.md, gap: 12 },
-  sectionTitle: { fontSize: theme.fonts.sizes.lg, fontWeight: '800', color: theme.colors.text },
-  description: { fontSize: theme.fonts.sizes.md, color: theme.colors.muted, lineHeight: 22 },
-  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6, 
-    backgroundColor: theme.colors.brandSoft, 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: theme.radii.full 
+
+  body: { padding: 24 },
+
+  name: { fontSize: 26, fontWeight: '900', color: theme.colors.text, letterSpacing: -0.5, marginBottom: 8 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  ratingText: { fontSize: 13, color: theme.colors.muted, fontWeight: '600' },
+
+  infoGrid: { flexDirection: 'row', gap: 10, marginBottom: 24, flexWrap: 'wrap' },
+  infoChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: theme.colors.brandSoft, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: theme.radii.full,
   },
-  chipText: { fontSize: theme.fonts.sizes.sm, fontWeight: '700', color: theme.colors.brand },
-  bookButton: { 
-    margin: theme.spacing.md, 
-    backgroundColor: theme.colors.brand, 
-    padding: theme.spacing.md, 
-    borderRadius: theme.radii.lg, 
-    alignItems: 'center' 
+  infoChipText: { fontSize: 13, fontWeight: '700', color: theme.colors.brand },
+
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.text, marginBottom: 8 },
+  sectionText: { fontSize: 14, color: theme.colors.muted, lineHeight: 22 },
+
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  serviceChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: theme.colors.surface, paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: theme.radii.full, borderWidth: 1, borderColor: theme.colors.border,
   },
-  bookButtonText: { color: '#fff', fontWeight: '800', fontSize: theme.fonts.sizes.md },
+  serviceChipText: { fontSize: 13, fontWeight: '600', color: theme.colors.text },
+
+  stickyFooter: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: 20, paddingBottom: 36,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderTopWidth: 1, borderTopColor: theme.colors.border,
+  },
+  bookBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: theme.colors.brand, borderRadius: 16, height: 56,
+    shadowColor: theme.colors.brand, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+  },
+  bookBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 }));

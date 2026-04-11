@@ -43,11 +43,12 @@ export default function AddVehicleScreen() {
     }
 
     create({
-      plateNumber: form.registrationNo,
+      registrationNo: form.registrationNo,
       make: form.make,
       model: form.model,
       year: year,
-      // Default additional fields if needed, or update API to handle these
+      vehicleType: form.vehicleType,
+      mileage: form.mileage ? parseInt(form.mileage, 10) : undefined,
     }, {
       onSuccess: () => router.back(),
       onError: (err) => Alert.alert('Error', handleApiError(err))

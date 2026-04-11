@@ -1,121 +1,172 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StatusBar,
-  TouchableOpacity
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
+import { ErrorScreen } from '@/components/feedback/ErrorScreen';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { useAuth } from '@/hooks';
+import { useWorkshopAppointments } from '@/features/appointments/queries/queries';
+import { useUpdateAppointmentStatus } from '@/features/appointments/queries/mutations';
+import { Appointment } from '@/features/appointments/types/appointments.types';
 
-const JOBS = [
-  { id: 1, vehicle: 'Toyota Prius', license: 'CAA-9876', status: 'Washing', progress: 0.8, steps: ['Inspection', 'Drain Oil', 'Filter Change', 'Refill', 'Washing'] },
-  { id: 2, vehicle: 'Honda Civic', license: 'CBA-1234', status: 'Drain Oil', progress: 0.3, steps: ['Inspection', 'Drain Oil', 'Parts Check', 'Refill'] },
-];
+function getVehicleLabel(a: Appointment): string {
+  if (typeof a.vehicleId === 'object') return `${a.vehicleId.make} ${a.vehicleId.model}`;
+  return 'Vehicle';
+}
+
+function getVehicleReg(a: Appointment): string {
+  if (typeof a.vehicleId === 'object') return a.vehicleId.registrationNo;
+  return '';
+}
+
+function getCustomerLabel(a: Appointment): string {
+  if (typeof a.userId === 'object') return a.userId.fullName ?? a.userId.email;
+  return 'Customer';
+}
+
+function TrackerCard({
+  item, onComplete,
+}: {
+  item: Appointment;
+  onComplete: (id: string) => void;
+}) {
+  const { theme } = useUnistyles();
+  const id = item._id ?? item.id ?? '';
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.vehicleBlock}>
+          <Text style={styles.vehicleName}>{getVehicleLabel(item)}</Text>
+          <Text style={styles.vehicleReg}>{getVehicleReg(item)}</Text>
+        </View>
+        <View style={styles.inProgressChip}>
+          <View style={styles.dot} />
+          <Text style={styles.inProgressText}>In Progress</Text>
+        </View>
+      </View>
+
+      <View style={styles.metaGrid}>
+        <View style={styles.metaItem}>
+          <Ionicons name="person-outline" size={13} color={theme.colors.muted} />
+          <Text style={styles.metaText}>{getCustomerLabel(item)}</Text>
+        </View>
+        <View style={styles.metaItem}>
+          <Ionicons name="construct-outline" size={13} color={theme.colors.muted} />
+          <Text style={styles.metaText}>{item.serviceType}</Text>
+        </View>
+        <View style={styles.metaItem}>
+          <Ionicons name="calendar-outline" size={13} color={theme.colors.muted} />
+          <Text style={styles.metaText}>
+            {new Date(item.scheduledDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+          </Text>
+        </View>
+      </View>
+
+      {item.notes ? (
+        <View style={styles.notesBox}>
+          <Text style={styles.notesText} numberOfLines={2}>{item.notes}</Text>
+        </View>
+      ) : null}
+
+      <TouchableOpacity style={styles.completeBtn} onPress={() => onComplete(id)}>
+        <Ionicons name="checkmark-done-outline" size={18} color="#fff" />
+        <Text style={styles.completeBtnText}>Mark Complete</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 export default function StaffTrackerScreen() {
   const { theme } = useUnistyles();
+  const { user } = useAuth();
+
+  const workshopId = user?.workshopId;
+  const { data, isLoading, isError, refetch } = useWorkshopAppointments(workshopId, 'in_progress');
+  const { mutate: updateStatus, isPending } = useUpdateAppointmentStatus();
+
+  const handleComplete = (id: string) => {
+    Alert.alert('Complete Job', 'Mark this job as completed? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Complete', onPress: () => updateStatus({ id, status: 'completed' }) },
+    ]);
+  };
+
+  if (isError) return <ErrorScreen onRetry={refetch} />;
 
   return (
-    <ScreenWrapper>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
-      
+    <ScreenWrapper bg={theme.colors.surface}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Job Status Tracker</Text>
+        <Text style={styles.headerTitle}>Job Tracker</Text>
+        {isPending
+          ? <ActivityIndicator color={theme.colors.brand} />
+          : <Text style={styles.headerCount}>{data?.length ?? 0} active</Text>
+        }
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {JOBS.map(j => (
-          <View key={j.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.vehicleName}>{j.vehicle}</Text>
-                <Text style={styles.license}>{j.license}</Text>
-              </View>
-              <View style={styles.progressCircle}>
-                <Text style={styles.progressText}>{Math.round(j.progress * 100)}%</Text>
-              </View>
-            </View>
-
-            <View style={styles.trackContainer}>
-              {j.steps.map((step, i) => {
-                const isDone = j.steps.indexOf(j.status) >= i;
-                const isCurrent = step === j.status;
-                return (
-                  <View key={step} style={styles.stepRow}>
-                    <View style={styles.lineCol}>
-                      <View style={[styles.dot, isDone && styles.dotDone, isCurrent && styles.dotCurrent]}>
-                        {isDone && !isCurrent && <Ionicons name="checkmark" size={12} color={theme.colors.surface} />}
-                      </View>
-                      {i < j.steps.length - 1 && <View style={[styles.line, isDone && styles.lineDone]} />}
-                    </View>
-                    <Text style={[styles.stepText, isDone && styles.stepTextDone, isCurrent && styles.stepTextCurrent]}>
-                      {step}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            <TouchableOpacity style={styles.updateBtn}>
-              <Text style={styles.updateBtnText}>Next Step: Finish {j.status}</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </ScrollView>
+      {isLoading
+        ? <ActivityIndicator style={{ marginTop: 40 }} size="large" color={theme.colors.brand} />
+        : (
+          <FlashList<Appointment>
+            data={data ?? []}
+            keyExtractor={a => a._id ?? a.id ?? ''}
+            renderItem={({ item }) => <TrackerCard item={item} onComplete={handleComplete} />}
+            estimatedItemSize={200}
+            onRefresh={refetch}
+            refreshing={isLoading}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={<EmptyState message="No active jobs at this time." />}
+          />
+        )
+      }
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  header: { 
-    padding: theme.spacing.md, 
-    backgroundColor: theme.colors.surface, 
-    borderBottomWidth: 1, 
-    borderBottomColor: theme.colors.border 
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.lg,
+    backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border,
   },
   headerTitle: { fontSize: 24, fontWeight: '900', color: theme.colors.text, letterSpacing: -0.5 },
+  headerCount: { fontSize: 13, color: theme.colors.muted, fontWeight: '700' },
 
-  scroll: { padding: theme.spacing.md, paddingBottom: 120 },
+  list: { paddingHorizontal: theme.spacing.md, paddingBottom: 120 },
+
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    elevation: 4,
-    shadowColor: theme.colors.black, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 
+    backgroundColor: theme.colors.surface, borderRadius: theme.radii.lg,
+    padding: theme.spacing.md, marginBottom: theme.spacing.md,
+    borderWidth: 1, borderColor: theme.colors.border, elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  vehicleName: { fontSize: 19, fontWeight: '800', color: theme.colors.text, marginBottom: 4 },
-  license: { fontSize: 13, color: theme.colors.muted, fontWeight: '700', letterSpacing: 1 },
-  progressCircle: { 
-    width: 48, height: 48, borderRadius: 24, 
-    backgroundColor: theme.colors.brandSoft, 
-    alignItems: 'center', justifyContent: 'center', 
-    borderWidth: 2, borderColor: theme.colors.brand 
-  },
-  progressText: { fontSize: 13, fontWeight: '800', color: theme.colors.brand },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  vehicleBlock: { flex: 1 },
+  vehicleName: { fontSize: 18, fontWeight: '900', color: theme.colors.text, letterSpacing: -0.3 },
+  vehicleReg: { fontSize: 12, color: theme.colors.muted, fontWeight: '700', letterSpacing: 0.5, marginTop: 2 },
 
-  trackContainer: { marginBottom: 24, paddingLeft: 10 },
-  stepRow: { flexDirection: 'row', gap: 16, height: 45, alignItems: 'flex-start' },
-  lineCol: { alignItems: 'center', width: 24 },
-  dot: { width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.border, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  dotDone: { backgroundColor: '#10B981' },
-  dotCurrent: {
-    backgroundColor: theme.colors.brand,
-    borderWidth: 4,
-    borderColor: theme.colors.brandSoft
+  inProgressChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
   },
-  line: { width: 2, height: 45, backgroundColor: theme.colors.border, position: 'absolute', top: 12, zIndex: 1 },
-  lineDone: { backgroundColor: '#10B981' },
-  stepText: { fontSize: 15, fontWeight: '600', color: theme.colors.muted, marginTop: 2 },
-  stepTextDone: { color: theme.colors.text, fontWeight: '700' },
-  stepTextCurrent: { color: theme.colors.brand, fontWeight: '900' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#3B82F6' },
+  inProgressText: { fontSize: 10, fontWeight: '800', color: '#2563EB' },
 
-  updateBtn: { backgroundColor: theme.colors.text, height: 48, borderRadius: theme.radii.md, alignItems: 'center', justifyContent: 'center' },
-  updateBtnText: { color: theme.colors.surface, fontSize: 14, fontWeight: '800' }
+  metaGrid: { gap: 6, marginBottom: 14 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { fontSize: 13, color: theme.colors.muted, fontWeight: '500' },
+
+  notesBox: {
+    backgroundColor: theme.colors.background, borderRadius: 8, padding: 10, marginBottom: 14,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  notesText: { fontSize: 12, color: theme.colors.muted, fontStyle: 'italic' },
+
+  completeBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 46, borderRadius: 10, backgroundColor: '#059669',
+  },
+  completeBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 }));

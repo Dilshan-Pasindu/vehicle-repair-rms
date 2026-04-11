@@ -1,12 +1,23 @@
+export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+
 export interface Appointment {
   _id: string;
-  workshopId: string;
-  vehicleId: string;
-  date: string;
-  time: string;
+  id?: string;
+  userId: string | { _id: string; fullName?: string; email: string };
+  vehicleId: string | { _id: string; registrationNo: string; make: string; model: string };
+  workshopId: string | { _id: string; name: string; address: string };
   serviceType: string;
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  scheduledDate: string;
+  status: AppointmentStatus;
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface CreateAppointmentPayload {
+  vehicleId: string;
+  workshopId: string;
+  serviceType: string;
+  scheduledDate: string;
+  notes?: string;
 }

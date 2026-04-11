@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
   ScrollView,
-  Dimensions,
-  SafeAreaView
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import { useAuth } from '@/providers/AuthProvider';
-import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { useAuth } from '@/providers/AuthProvider';
 
 export function LoginScreen() {
-  const { signIn, mockSignIn } = useAuth();
+  const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,318 +25,209 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSignIn = async () => {
-    if (!email || !password) return;
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      // In a real scenario, this would call the API or Asgardeo flow
-      // Adding a small delay to simulate processing
-      setTimeout(() => {
-        setLoading(false);
-        setError('Manual login is for demo. Please use the Porta access below for testing.');
-      }, 1000);
+      await login({ email: email.trim().toLowerCase(), password });
+      // AuthProvider sets user → _layout.tsx redirects to correct dashboard
     } catch (err: any) {
-      setError('Invalid credentials. Please try again.');
+      setError(err?.message || 'Invalid credentials. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
 
-  const personas = [
-    { name: 'Admin', role: 'admin', icon: 'shield-checkmark', color: '#1A1A2E' },
-    { name: 'Garage', role: 'workshop_owner', icon: 'business', color: '#F56E0F' },
-    { name: 'Staff', role: 'workshop_staff', icon: 'people', color: '#10B981' },
-    { name: 'Customer', role: 'customer', icon: 'person', color: '#3B82F6' },
-  ] as const;
-
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.container}>
-          
-          {/* HEADER LOGO & TITLE */}
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+          {/* BRAND HEADER */}
           <View style={styles.header}>
-            <View style={styles.logoRow}>
-              <View style={styles.logoBox}>
-                <View style={styles.dotRow}>
-                  <View style={styles.whiteDot} />
-                  <View style={styles.orangeDot} />
-                </View>
-              </View>
-              <View style={styles.titleCol}>
-                <Text style={styles.logoText}>VSRMS</Text>
-                <Text style={styles.logoSubtext}>Vehicle Service & Repair</Text>
+            <View style={styles.logoBox}>
+              <View style={styles.dotRow}>
+                <View style={styles.whiteDot} />
+                <View style={styles.orangeDot} />
               </View>
             </View>
-            <TouchableOpacity style={styles.settingsBtn}>
-              <Ionicons name="settings-outline" size={24} color="#6B7280" />
-            </TouchableOpacity>
+            <View style={styles.titleCol}>
+              <Text style={styles.logoText}>VSRMS</Text>
+              <Text style={styles.logoSubtext}>Vehicle Service & Repair</Text>
+            </View>
           </View>
 
-          {/* MAIN SIGN IN CARD */}
-          <Animated.View entering={FadeInUp.duration(600)} style={styles.card}>
+          {/* SIGN IN CARD */}
+          <View style={styles.card}>
             <Text style={styles.signInTitle}>Sign In</Text>
-            <Text style={styles.signInSubtitle}>Sign in to your account to continue</Text>
+            <Text style={styles.signInSubtitle}>Enter your credentials to continue</Text>
 
-            {/* ERROR MESSAGE */}
-            {error && <Text style={styles.errorText}>{error}</Text>}
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
-            {/* EMAIL INPUT */}
+            {/* EMAIL */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email / Username</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="Enter your email or username" 
-                placeholderTextColor="#9CA3AF"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-              />
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="mail-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="your@email.com"
+                  placeholderTextColor="#9CA3AF"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                />
+              </View>
             </View>
 
-            {/* PASSWORD INPUT */}
+            {/* PASSWORD */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput 
-                  style={styles.passwordInput} 
-                  placeholder="Enter your password" 
+              <View style={styles.inputRow}>
+                <Ionicons name="lock-closed-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="••••••••"
                   placeholderTextColor="#9CA3AF"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignIn}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Text style={styles.showBtn}>{showPassword ? 'Hide' : 'Show'}</Text>
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
             </View>
-
-            <TouchableOpacity style={styles.forgotBtn}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </TouchableOpacity>
 
             {/* SIGN IN BUTTON */}
-            <TouchableOpacity 
-              style={[styles.signInBtn, loading && { opacity: 0.7 }]} 
+            <TouchableOpacity
+              style={[styles.signInBtn, loading && styles.signInBtnDisabled]}
               onPress={handleSignIn}
               disabled={loading}
+              activeOpacity={0.85}
             >
-              {loading ? <ActivityIndicator color="white" /> : <Text style={styles.signInBtnText}>Sign In</Text>}
+              {loading
+                ? <ActivityIndicator color="#FFFFFF" />
+                : <Text style={styles.signInBtnText}>Sign In</Text>
+              }
             </TouchableOpacity>
-
-            <View style={styles.orRow}>
-              <View style={styles.orLine} />
-              <Text style={styles.orText}>OR</Text>
-              <View style={styles.orLine} />
-            </View>
-
-            {/* SOCIAL BUTTONS */}
-            <TouchableOpacity style={styles.socialBtn}>
-              <View style={styles.socialIconBox}>
-                <FontAwesome name="google" size={16} color="#1A1A2E" />
-              </View>
-              <Text style={styles.socialText}>Continue with Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.socialBtn}>
-              <View style={styles.socialIconBoxBlue}>
-                <FontAwesome name="facebook" size={16} color="white" />
-              </View>
-              <Text style={styles.socialText}>Continue with Facebook</Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* CREATE ACCOUNT LINK */}
-          <View style={styles.bottomSection}>
-            <View style={styles.createAccountRow}>
-              <Text style={styles.noAccountText}>Don't have an account? </Text>
-              <TouchableOpacity>
-                <Text style={styles.createText}>Create an account</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.asgardeoRow}>
-              <Text style={styles.securedText}>Secured by </Text>
-              <Text style={styles.asgardeoTextBrand}>Asgardeo</Text>
-              <Text style={styles.securedText}> · WSO2</Text>
-            </View>
-            
-            {/* PORTAL ACCESS (DEVELOPER SHORTCUTS) */}
-            <View style={styles.personaRow}>
-              {personas.map((p) => (
-                <TouchableOpacity 
-                  key={p.role} 
-                  onPress={() => mockSignIn(p.role)}
-                  style={styles.personaChip}
-                >
-                  <Ionicons name={p.icon as any} size={14} color="#6B7280" />
-                  <Text style={styles.personaChipText}>{p.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
           </View>
-        </View>
-      </ScrollView>
+
+          {/* FOOTER */}
+          <View style={styles.footer}>
+            <Text style={styles.noAccountText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/register' as any)}>
+              <Text style={styles.createText}>Create account</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.securedRow}>
+            <Ionicons name="shield-checkmark-outline" size={14} color="#9CA3AF" />
+            <Text style={styles.securedText}> Secured by </Text>
+            <Text style={styles.asgardeoText}>Asgardeo · WSO2</Text>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  screen: { flex: 1, backgroundColor: '#F9FAFB' },
-  scrollContent: { flexGrow: 1 },
-  container: { paddingHorizontal: 20, paddingTop: 20 },
-  
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center',
-    marginBottom: 30,
-    marginTop: 10
-  },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
+  safe: { flex: 1, backgroundColor: '#F9FAFB' },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 40 },
+
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 40, gap: 14 },
   logoBox: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     backgroundColor: '#1A1A2E',
-    borderRadius: 10,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12
   },
-  dotRow: { flexDirection: 'row', gap: 4 },
-  whiteDot: { width: 10, height: 10, borderRadius: 2, backgroundColor: '#FFFFFF' },
-  orangeDot: { width: 10, height: 10, borderRadius: 2, backgroundColor: '#F56E0F' },
-  titleCol: { justifyContent: 'center' },
-  logoText: { fontSize: 20, fontWeight: '800', color: '#1A1A2E' },
-  logoSubtext: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
-  settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
+  dotRow: { flexDirection: 'row', gap: 5 },
+  whiteDot: { width: 12, height: 12, borderRadius: 3, backgroundColor: '#FFFFFF' },
+  orangeDot: { width: 12, height: 12, borderRadius: 3, backgroundColor: '#F56E0F' },
+  titleCol: {},
+  logoText: { fontSize: 22, fontWeight: '900', color: '#1A1A2E', letterSpacing: -0.5 },
+  logoSubtext: { fontSize: 11, color: '#6B7280', fontWeight: '600', marginTop: 1 },
 
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    boxShadow: [{
-      offsetX: 0,
-      offsetY: 2,
-      blurRadius: 10,
-      color: 'rgba(0,0,0,0.05)',
-    }],
-    elevation: 3,
-    marginBottom: 30
+    borderRadius: 20,
+    padding: 28,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  signInTitle: { fontSize: 24, fontWeight: '800', color: '#1A1A2E', marginBottom: 8 },
+  signInTitle: { fontSize: 26, fontWeight: '900', color: '#1A1A2E', marginBottom: 6 },
   signInSubtitle: { fontSize: 14, color: '#6B7280', marginBottom: 24 },
-  
-  errorText: { color: theme.colors.error, fontSize: 12, marginBottom: 16, fontWeight: '600' },
-  
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '700', color: '#1A1A2E', marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 15,
-    color: '#1A1A2E'
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingRight: 14
-  },
-  passwordInput: {
-    flex: 1,
-    padding: 14,
-    fontSize: 15,
-    color: '#1A1A2E'
-  },
-  showBtn: { color: '#F56E0F', fontWeight: '700', fontSize: 13 },
-  
-  forgotBtn: { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotText: { color: '#F56E0F', fontSize: 14, fontWeight: '700' },
-  
-  signInBtn: {
-    backgroundColor: '#FFBD80', // Soft orange from screenshot
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 24
-  },
-  signInBtnText: { color: 'white', fontSize: 16, fontWeight: '800' },
 
-  orRow: {
+  errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24
-  },
-  orLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
-  orText: { marginHorizontal: 12, fontSize: 12, fontWeight: '700', color: '#9CA3AF' },
-
-  socialBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
     padding: 12,
-    marginBottom: 12
+    marginBottom: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
-  socialIconBox: {
-    width: 28,
-    height: 28,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12
-  },
-  socialIconBoxBlue: {
-    width: 28,
-    height: 28,
-    backgroundColor: '#1877F2',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12
-  },
-  socialText: { fontSize: 14, fontWeight: '700', color: '#1A1A2E' },
+  errorText: { color: '#B91C1C', fontSize: 13, fontWeight: '600', flex: 1 },
 
-  bottomSection: { alignItems: 'center' },
-  createAccountRow: { flexDirection: 'row', marginBottom: 20 },
-  noAccountText: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 8 },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 52,
+    backgroundColor: '#FAFAFA',
+  },
+  inputIcon: { marginRight: 10 },
+  textInput: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+
+  signInBtn: {
+    backgroundColor: '#F56E0F',
+    borderRadius: 14,
+    height: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    shadowColor: '#F56E0F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  signInBtnDisabled: { opacity: 0.65 },
+  signInBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 16 },
+  noAccountText: { fontSize: 14, color: '#6B7280' },
   createText: { fontSize: 14, color: '#F56E0F', fontWeight: '800' },
 
-  asgardeoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 30 },
-  securedText: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
-  asgardeoTextBrand: { fontSize: 12, color: '#F56E0F', fontWeight: '800' },
-  
-  personaRow: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'center', 
-    gap: 8,
-    paddingHorizontal: 20
-  },
-  personaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.03)',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)'
-  },
-  personaChipText: { fontSize: 11, fontWeight: '700', color: '#6B7280' }
+  securedRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  securedText: { fontSize: 12, color: '#9CA3AF' },
+  asgardeoText: { fontSize: 12, color: '#F56E0F', fontWeight: '700' },
 }));

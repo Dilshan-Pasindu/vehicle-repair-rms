@@ -1,122 +1,196 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  StatusBar,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  Switch
+  View, Text, ScrollView, TouchableOpacity, TextInput,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
+import { useAuth } from '@/hooks';
+import { useWorkshopAppointments } from '@/features/appointments/queries/queries';
+import { useCreateRecord } from '@/features/records/queries/mutations';
+import { Appointment } from '@/features/appointments/types/appointments.types';
+
+function getVehicleLabel(a: Appointment): string {
+  if (typeof a.vehicleId === 'object') {
+    return `${a.vehicleId.make} ${a.vehicleId.model} · ${a.vehicleId.registrationNo}`;
+  }
+  return a.vehicleId;
+}
+
+function getVehicleId(a: Appointment): string {
+  if (typeof a.vehicleId === 'object') return a.vehicleId._id;
+  return a.vehicleId;
+}
 
 export default function StaffRecordScreen() {
-  const router = useRouter();
   const { theme } = useUnistyles();
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const [mileage, setMileage] = useState('');
-  const [notes, setNotes] = useState('');
-  const [parts, setParts] = useState(false);
+  const workshopId = user?.workshopId;
+  const { data: inProgressAppts } = useWorkshopAppointments(workshopId, 'in_progress');
+
+  const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [showPicker, setShowPicker]     = useState(false);
+  const [workDone, setWorkDone]         = useState('');
+  const [mileage, setMileage]           = useState('');
+  const [cost, setCost]                 = useState('');
+  const [techName, setTechName]         = useState(user?.fullName ?? '');
+  const [parts, setParts]               = useState('');
+  const [error, setError]               = useState('');
+
+  const { mutate: createRecord, isPending } = useCreateRecord();
 
   const handleSubmit = () => {
-    if (!mileage) {
-      Alert.alert('Error', 'Please enter current mileage');
-      return;
-    }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Success', 'Service record created successfully', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
-    }, 1500);
+    if (!selectedAppt) { setError('Please select an appointment.'); return; }
+    if (!workDone.trim()) { setError('Work done description is required.'); return; }
+    const costNum = parseFloat(cost);
+    if (isNaN(costNum) || costNum < 0) { setError('Enter a valid cost.'); return; }
+    setError('');
+
+    const partsArray = parts.split(',').map(p => p.trim()).filter(Boolean);
+
+    createRecord({
+      vehicleId:        getVehicleId(selectedAppt),
+      appointmentId:    selectedAppt._id ?? selectedAppt.id,
+      serviceDate:      new Date().toISOString(),
+      workDone:         workDone.trim(),
+      partsReplaced:    partsArray,
+      totalCost:        costNum,
+      mileageAtService: mileage ? parseInt(mileage, 10) : undefined,
+      technicianName:   techName.trim() || undefined,
+    }, { onSuccess: () => router.back() });
   };
 
   return (
-    <ScreenWrapper>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
-        
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Service Record Entry</Text>
-        </View>
+    <ScreenWrapper bg={theme.colors.surface}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Service Record Entry</Text>
+      </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.formCard}>
-            <Text style={styles.sectionLabel}>Vehicle & Job Details</Text>
-            
-            <View style={styles.jobPreview}>
-              <View style={styles.iconBox}>
-                <Ionicons name="car-sport" size={24} color={theme.colors.brand} />
-              </View>
-              <View>
-                <Text style={styles.jobVehicle}>Toyota Prius (CAA-9876)</Text>
-                <Text style={styles.jobType}>Periodic Maintenance (100k km)</Text>
-              </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+
+          {error ? (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+              <Text style={styles.errorText}>{error}</Text>
             </View>
+          ) : null}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Current Mileage (km)</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="e.g. 100,245" 
-                placeholderTextColor={theme.colors.muted}
-                value={mileage}
-                onChangeText={setMileage}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Technician Notes</Text>
-              <TextInput 
-                style={[styles.input, styles.textArea]} 
-                placeholder="Describe work done, issues found..." 
-                placeholderTextColor={theme.colors.muted}
-                multiline
-                numberOfLines={4}
-                value={notes}
-                onChangeText={setNotes}
-              />
-            </View>
-
-            <View style={styles.switchRow}>
-              <View>
-                <Text style={styles.switchLabel}>Parts Replaced</Text>
-                <Text style={styles.switchSub}>Oil filter, Air filter, Brake pads</Text>
-              </View>
-              <Switch 
-                value={parts} 
-                onValueChange={setParts}
-                trackColor={{ false: theme.colors.border, true: theme.colors.brand }}
-              />
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.submitBtn, loading && { opacity: 0.7 }]} 
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              <Text style={styles.submitBtnText}>{loading ? 'Submitting...' : 'Submit Record'}</Text>
+          {/* Appointment picker */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Linked Job (In Progress) *</Text>
+            <TouchableOpacity style={styles.selector} onPress={() => setShowPicker(!showPicker)}>
+              <Text style={[styles.selectorText, !selectedAppt && { color: theme.colors.muted }]}>
+                {selectedAppt ? getVehicleLabel(selectedAppt) : 'Select appointment...'}
+              </Text>
+              <Ionicons name={showPicker ? 'chevron-up' : 'chevron-down'} size={18} color={theme.colors.muted} />
             </TouchableOpacity>
+
+            {showPicker && (
+              <View style={styles.pickerList}>
+                {(inProgressAppts ?? []).length === 0
+                  ? <Text style={styles.pickerEmpty}>No in-progress jobs</Text>
+                  : (inProgressAppts ?? []).map(a => (
+                    <TouchableOpacity
+                      key={a._id}
+                      style={[styles.pickerItem, selectedAppt?._id === a._id && styles.pickerItemActive]}
+                      onPress={() => { setSelectedAppt(a); setShowPicker(false); }}
+                    >
+                      <Text style={styles.pickerItemText}>{getVehicleLabel(a)}</Text>
+                      <Text style={styles.pickerItemSub}>{a.serviceType}</Text>
+                    </TouchableOpacity>
+                  ))
+                }
+              </View>
+            )}
+          </View>
+
+          {/* Work done */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Work Done *</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              value={workDone}
+              onChangeText={setWorkDone}
+              placeholder="Describe work performed, issues found..."
+              placeholderTextColor={theme.colors.muted}
+              multiline numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Parts */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Parts Replaced (comma separated)</Text>
+            <TextInput
+              style={styles.input}
+              value={parts}
+              onChangeText={setParts}
+              placeholder="Oil filter, brake pads"
+              placeholderTextColor={theme.colors.muted}
+            />
+          </View>
+
+          {/* Mileage */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Current Mileage (km)</Text>
+            <TextInput
+              style={styles.input}
+              value={mileage}
+              onChangeText={setMileage}
+              placeholder="e.g. 45200"
+              placeholderTextColor={theme.colors.muted}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Technician */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Technician Name</Text>
+            <TextInput
+              style={styles.input}
+              value={techName}
+              onChangeText={setTechName}
+              placeholder="Your name"
+              placeholderTextColor={theme.colors.muted}
+            />
+          </View>
+
+          {/* Cost */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Total Cost (LKR) *</Text>
+            <TextInput
+              style={styles.input}
+              value={cost}
+              onChangeText={setCost}
+              placeholder="15000"
+              placeholderTextColor={theme.colors.muted}
+              keyboardType="numeric"
+            />
           </View>
 
           <View style={styles.infoBox}>
-            <Ionicons name="information-circle-outline" size={20} color={theme.colors.muted} />
+            <Ionicons name="information-circle-outline" size={18} color={theme.colors.muted} />
             <Text style={styles.infoText}>
-              Submitting this record will notify the vehicle owner and update the service history.
+              Submitting this record will update the vehicle's service history and notify the owner.
             </Text>
           </View>
+
+          <TouchableOpacity
+            style={[styles.submitBtn, isPending && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={isPending}
+          >
+            {isPending
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.submitText}>Submit Record</Text>
+            }
+          </TouchableOpacity>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenWrapper>
@@ -124,103 +198,58 @@ export default function StaffRecordScreen() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  header: { 
-    padding: theme.spacing.md, 
-    backgroundColor: theme.colors.surface, 
-    borderBottomWidth: 1, 
-    borderBottomColor: theme.colors.border 
+  header: {
+    padding: theme.spacing.md, backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1, borderBottomColor: theme.colors.border,
   },
   headerTitle: { fontSize: 22, fontWeight: '900', color: theme.colors.text, letterSpacing: -0.5 },
 
-  scroll: { padding: theme.spacing.md, paddingBottom: 120 },
-  formCard: { 
-    backgroundColor: theme.colors.surface, 
-    borderRadius: theme.radii.lg, 
-    padding: theme.spacing.md, 
-    borderWidth: 1, 
-    borderColor: theme.colors.border 
-  },
-  sectionLabel: { 
-    fontSize: 14, 
-    fontWeight: '800', 
-    color: theme.colors.muted, 
-    textTransform: 'uppercase', 
-    marginBottom: 16 
-  },
-  
-  jobPreview: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 16, 
-    backgroundColor: theme.colors.background, 
-    padding: 12, 
-    borderRadius: 12, 
-    marginBottom: 24, 
-    borderWidth: 1, 
-    borderColor: theme.colors.border 
-  },
-  iconBox: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 10, 
-    backgroundColor: theme.colors.brandSoft, 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  jobVehicle: { fontSize: 16, fontWeight: '800', color: theme.colors.text, marginBottom: 2 },
-  jobType: { fontSize: 13, color: theme.colors.muted, fontWeight: '600' },
+  body: { padding: theme.spacing.md, gap: 20, paddingBottom: 60 },
 
-  inputGroup: { marginBottom: 20 },
-  inputLabel: { fontSize: 14, fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
-  input: { 
-    backgroundColor: theme.colors.background, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: theme.colors.border, 
-    paddingHorizontal: 16, 
-    height: 48, 
-    fontSize: 15, 
-    color: theme.colors.text 
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#FEF2F2', padding: 12, borderRadius: 10,
+    borderWidth: 1, borderColor: '#FECACA',
   },
-  textArea: { height: 100, paddingTop: 12, textAlignVertical: 'top' },
+  errorText: { flex: 1, fontSize: 13, color: '#DC2626', fontWeight: '600' },
 
-  switchRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 32 
+  field: { gap: 7 },
+  label: { fontSize: 13, fontWeight: '700', color: theme.colors.text },
+  input: {
+    height: 48, paddingHorizontal: 14, borderRadius: 10,
+    borderWidth: 1, borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background, fontSize: 14, color: theme.colors.text,
   },
-  switchLabel: { fontSize: 15, fontWeight: '700', color: theme.colors.text, marginBottom: 2 },
-  switchSub: { fontSize: 12, color: theme.colors.muted, fontWeight: '500' },
+  textarea: { height: 110, paddingTop: 12, paddingBottom: 12 },
 
-  submitBtn: { 
-    backgroundColor: theme.colors.brand, 
-    height: 54, 
-    borderRadius: 12, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    shadowColor: theme.colors.brand, 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.2, 
-    shadowRadius: 8, 
-    elevation: 6 
+  selector: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    height: 48, paddingHorizontal: 14, borderRadius: 10,
+    borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface,
   },
-  submitBtnText: { color: theme.colors.surface, fontSize: 16, fontWeight: '800' },
+  selectorText: { fontSize: 14, color: theme.colors.text, flex: 1 },
+  pickerList: {
+    borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10,
+    backgroundColor: theme.colors.surface, overflow: 'hidden',
+  },
+  pickerEmpty: { padding: 14, fontSize: 13, color: theme.colors.muted, textAlign: 'center' },
+  pickerItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  pickerItemActive: { backgroundColor: theme.colors.brandSoft },
+  pickerItemText: { fontSize: 14, fontWeight: '700', color: theme.colors.text },
+  pickerItemSub: { fontSize: 12, color: theme.colors.muted, marginTop: 2 },
 
-  infoBox: { 
-    flexDirection: 'row', 
-    gap: 12, 
-    padding: 16, 
-    backgroundColor: 'rgba(0,0,0,0.03)', 
-    borderRadius: 12, 
-    marginTop: 24, 
-    alignItems: 'flex-start' 
+  infoBox: {
+    flexDirection: 'row', gap: 10, padding: 14,
+    backgroundColor: theme.colors.background, borderRadius: 10,
+    borderWidth: 1, borderColor: theme.colors.border,
   },
-  infoText: { 
-    flex: 1, 
-    fontSize: 13, 
-    color: theme.colors.muted, 
-    lineHeight: 18, 
-    fontWeight: '500' 
-  }
+  infoText: { flex: 1, fontSize: 12, color: theme.colors.muted, lineHeight: 18 },
+
+  submitBtn: {
+    height: 54, borderRadius: 12, backgroundColor: theme.colors.brand,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: theme.colors.brand, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+  },
+  submitText: { fontSize: 16, fontWeight: '800', color: '#fff' },
 }));

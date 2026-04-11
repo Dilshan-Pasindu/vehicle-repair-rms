@@ -8,17 +8,17 @@ export const fetchVehicles = async (): Promise<Vehicle[]> => {
 
 export const fetchVehicle = async (id: string): Promise<Vehicle> => {
   const { data } = await client.get(`/vehicles/${id}`);
-  return data.data || data;
+  return data.vehicle || data;
 };
 
 export const createVehicle = async (vehicle: Partial<Vehicle>): Promise<Vehicle> => {
   const { data } = await client.post('/vehicles', vehicle);
-  return data.data || data;
+  return data.vehicle || data;
 };
 
 export const updateVehicle = async (id: string, vehicle: Partial<Vehicle>): Promise<Vehicle> => {
   const { data } = await client.put(`/vehicles/${id}`, vehicle);
-  return data.data || data;
+  return data.vehicle || data;
 }
 
 export const deleteVehicle = async (id: string): Promise<void> => {

@@ -31,8 +31,8 @@ export default function EditVehicleScreen() {
         make: vehicle.make || '',
         model: vehicle.model || '',
         year: String(vehicle.year || ''),
-        vehicleType: (vehicle as any).vehicleType || 'car', // Use any cast if type is extending
-        mileage: vehicle.engineCapacity ? String(vehicle.engineCapacity) : '' // Mapping logic might vary
+        vehicleType: vehicle.vehicleType || 'car',
+        mileage: vehicle.mileage ? String(vehicle.mileage) : ''
       });
     }
   }, [vehicle]);
@@ -53,7 +53,8 @@ export default function EditVehicleScreen() {
         make: form.make.trim(),
         model: form.model.trim(),
         year: year,
-        //Mapping other fields if necessary
+        vehicleType: form.vehicleType,
+        mileage: form.mileage ? parseInt(form.mileage, 10) : undefined,
       }
     }, {
       onSuccess: () => {

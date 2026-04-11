@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authKeys } from './auth.keys';
-import { updateMe, syncProfile } from '../api/auth.api';
+import { updateMe, deactivateUser } from '../api/auth.api';
 import { useToast } from '@/providers/ToastProvider';
+import { handleApiError } from '@/services/error.handler';
 
 export function useUpdateMe() {
   const qc = useQueryClient();
@@ -13,17 +14,20 @@ export function useUpdateMe() {
       qc.invalidateQueries({ queryKey: authKeys.me() });
       showToast('Profile updated', 'success');
     },
-    onError:   (e: Error) => showToast(e.message, 'error'), 
+    onError: (e: any) => showToast(handleApiError(e), 'error'),
   });
 }
 
-export function useSyncProfile() {
+export function useDeactivateUser() {
   const qc = useQueryClient();
-  
+  const { showToast } = useToast();
+
   return useMutation({
-    mutationFn: syncProfile,
+    mutationFn: deactivateUser,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: authKeys.me() });
+      qc.invalidateQueries({ queryKey: authKeys.users() });
+      showToast('User deactivated', 'success');
     },
+    onError: (e: any) => showToast(handleApiError(e), 'error'),
   });
 }

@@ -23,5 +23,6 @@ export function useWorkshop(id: string) {
     queryKey: workshopKeys.detail(id),
     queryFn:  () => fetchWorkshop(id),
     staleTime: 5 * 60 * 1000,
+    enabled: !!id,
   });
 }
