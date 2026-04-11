@@ -8,10 +8,10 @@ export const fetchRecordsByVehicle = async (vehicleId: string, params?: Record<s
 
 export const fetchRecord = async (id: string): Promise<ServiceRecord> => {
   const { data } = await client.get(`/records/${id}`);
-  return data.data || data;
+  return data.record || data;
 };
 
 export const createRecord = async (payload: Partial<ServiceRecord>): Promise<ServiceRecord> => {
   const { data } = await client.post('/records', payload);
-  return data.data || data;
+  return data.record || data;
 };

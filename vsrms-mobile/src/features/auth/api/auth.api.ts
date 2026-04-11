@@ -6,22 +6,30 @@ export const login = async (payload: LoginPayload): Promise<AuthResponse> => {
   return data;
 };
 
-export const register = async (payload: RegisterPayload): Promise<AuthResponse> => {
-  const { data } = await client.post('/auth/register', payload);
-  return data;
+export const register = async (payload: RegisterPayload): Promise<void> => {
+  await client.post('/auth/register', payload);
 };
 
 export const syncProfile = async (): Promise<User> => {
   const { data } = await client.post('/auth/sync-profile');
-  return data.data || data;
+  return data.user || data;
 };
 
 export const getMe = async (): Promise<User> => {
   const { data } = await client.get('/auth/me');
-  return data.data || data;
+  return data.user || data;
 };
 
 export const updateMe = async (payload: Partial<User>): Promise<User> => {
   const { data } = await client.put('/auth/me', payload);
-  return data.data || data;
+  return data.user || data;
+};
+
+export const listUsers = async (params?: Record<string, any>): Promise<{ data: User[]; total: number; page: number; pages: number }> => {
+  const { data } = await client.get('/auth/users', { params });
+  return data;
+};
+
+export const deactivateUser = async (id: string): Promise<void> => {
+  await client.delete(`/auth/users/${id}`);
 };

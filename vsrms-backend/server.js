@@ -79,3 +79,5 @@ connectDB().then(() => {
     console.log(` VSRMS API running on port ${PORT} [${process.env.NODE_ENV ?? 'development'}]`),
   );
 });
+
+module.exports = app;

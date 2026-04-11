@@ -1,277 +1,175 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Car, Wrench, ShieldCheck, MapPin } from 'lucide-react-native';
-import { Colors, Spacing, CustomBorders, Shadows } from '../constants/theme';
+import { StyleSheet } from 'react-native-unistyles';
+import { Ionicons } from '@expo/vector-icons';
+import { AppLogo } from '@/components/ui/AppLogo';
+
+const { height: SCREEN_H } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.light.background} />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── HERO GRAPHIC (SVG instead of Image) ── */}
-        <View style={styles.heroContainer}>
-          <View style={styles.heroCircleLarger}>
-             <View style={styles.heroCircleSmaller}>
-                <Car size={64} color={Colors.light.primary} strokeWidth={1.5} />
-                <View style={styles.wrenchBadge}>
-                  <Wrench size={16} color={Colors.light.surface} strokeWidth={2.5} />
-                </View>
-             </View>
-          </View>
+      {/* ── DARK TOP SECTION ── */}
+      <View style={styles.topSection}>
+        <View style={styles.logoContainer}>
+          <AppLogo size={52} showText={true} variant="light" />
         </View>
 
-        <View style={styles.contentContainer}>
-          {/* ── BADGE ── */}
-          <View style={styles.badge}>
-            <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>Sri Lanka's #1 Vehicle App</Text>
-          </View>
+        <Text style={styles.headline}>Your Vehicle.</Text>
+        <Text style={styles.subHeadline}>Fully Managed.</Text>
+        
+        <Text style={styles.desc}>
+          Book workshops, track repairs, and manage your vehicle history effortlessly from your phone.
+        </Text>
 
-          {/* ── HEADLINE ── */}
-          <View style={styles.headlineBlock}>
-            <Text style={styles.h1}>Your Vehicle.</Text>
-            <Text style={styles.h1Orange}>Fully Managed.</Text>
-            <Text style={styles.sub}>
-              Book garages, track repairs, and get smart maintenance reminders — all from your phone.
-            </Text>
-          </View>
+        {/* Decorative elements to match Login/Register */}
+        <View style={styles.decCircle1} />
+        <View style={styles.decCircle2} />
+      </View>
 
-          {/* ── STATS / FEATURES ── */}
-          <View style={styles.statsRow}>
-            {[
-              { value: '500+', label: 'Garages', icon: MapPin },
-              { value: '12K+', label: 'Vehicles', icon: Car },
-              { value: 'Secured', label: 'By Asgardeo', icon: ShieldCheck },
-            ].map((s, i) => (
-              <React.Fragment key={s.label}>
-                <View style={styles.statCell}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <s.icon size={18} color={Colors.light.primary} style={{ marginRight: 6 }} />
-                    <Text style={styles.statValue}>{s.value}</Text>
-                  </View>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                </View>
-                {i < 2 && <View style={styles.statSep} />}
-              </React.Fragment>
-            ))}
-          </View>
+      {/* ── WHITE BOTTOM CARD ── */}
+      <View style={styles.bottomCard}>
+        <View style={styles.btnContainer}>
+          
+          <TouchableOpacity
+            style={styles.btnPrimary}
+            activeOpacity={0.85}
+            onPress={() => router.push('/auth/register' as any)}
+          >
+            <Ionicons name="rocket-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.btnPrimaryText}>Create Account</Text>
+          </TouchableOpacity>
 
-          {/* ── BUTTONS ── */}
-          <View style={styles.btnGroup}>
-            <TouchableOpacity
-              style={styles.btnPrimary}
-              activeOpacity={0.85}
-              onPress={() => router.push('/auth/register' as any)}
-            >
-              <Text style={styles.btnPrimaryText}>Get Started Free</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnSecondary}
+            activeOpacity={0.85}
+            onPress={() => router.push('/auth/login' as any)}
+          >
+            <Text style={styles.btnSecondaryText}>Sign In</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.btnSecondary}
-              activeOpacity={0.85}
-              onPress={() => router.push('/auth/login' as any)}
-            >
-              <Text style={styles.btnSecondaryText}>Log In</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </ScrollView>
+
+        {/* ── FOOTER ── */}
+        <View style={styles.footer}>
+          <Ionicons name="shield-checkmark-outline" size={13} color="#9CA3AF" />
+          <Text style={styles.footerText}> Secured by </Text>
+          <Text style={styles.footerBrand}>Asgardeo · WSO2</Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
+const styles = StyleSheet.create((theme) => ({
+  safe: { flex: 1, backgroundColor: '#1A1A2E' },
+
+  /* ── Dark top ── */
+  topSection: {
+    backgroundColor: '#1A1A2E',
+    paddingHorizontal: 32,
     flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: Spacing.five,
-  },
-
-  /* Hero SVG Graphic */
-  heroContainer: {
-    width: '100%',
-    height: 260,
-    marginTop: Spacing.six,
-    marginBottom: Spacing.three,
-    alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: 40,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  heroCircleLarger: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: Colors.light.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoContainer: {
+    marginBottom: 44,
+    alignItems: 'flex-start',
   },
-  heroCircleSmaller: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: Colors.light.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-  },
-  wrenchBadge: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: Colors.light.primary,
-    padding: 8,
-    borderRadius: CustomBorders.radius.full,
-    borderWidth: 3,
-    borderColor: Colors.light.surface,
-  },
-
-  /* Content */
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-
-  /* Badge */
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.light.primaryMuted,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 10,
-    borderRadius: CustomBorders.radius.full,
-    marginBottom: Spacing.four,
-    marginHorizontal: Spacing.four,
-    borderWidth: 1,
-    borderColor: 'rgba(249, 115, 22, 0.1)',
-    gap: Spacing.one,
-  },
-  badgeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.light.primary,
-  },
-  badgeText: {
-    color: Colors.light.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-
-  /* Headline */
-  headlineBlock: {
-    marginBottom: Spacing.four,
-    paddingHorizontal: Spacing.four,
-  },
-  h1: {
-    fontSize: 42,
+  headline: {
+    fontSize: 44,
     fontWeight: '900',
-    color: Colors.light.text,
+    color: '#FFFFFF',
     letterSpacing: -1,
-    lineHeight: 48,
+    marginBottom: 4,
   },
-  h1Orange: {
-    fontSize: 42,
+  subHeadline: {
+    fontSize: 44,
     fontWeight: '900',
-    color: Colors.light.primary,
+    color: '#F56E0F',
     letterSpacing: -1,
-    lineHeight: 48,
-    marginBottom: Spacing.two,
+    marginBottom: 20,
   },
-  sub: {
-    fontSize: 15,
-    color: Colors.light.textMuted,
-    lineHeight: 24,
+  desc: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.6)',
     fontWeight: '500',
-    paddingRight: Spacing.three,
+    lineHeight: 24,
+    paddingRight: 10,
   },
 
-  /* Stats */
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: Colors.light.surface,
-    borderRadius: CustomBorders.radius.lg,
-    paddingVertical: Spacing.four,
-    marginBottom: Spacing.five,
-    marginHorizontal: Spacing.four,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    ...Shadows.md,
+  decCircle1: {
+    position: 'absolute', width: 220, height: 220, borderRadius: 110,
+    backgroundColor: 'rgba(245,110,15,0.08)', top: -60, right: -100,
   },
-  statCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.one,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.light.text,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: Colors.light.textMuted,
-    fontWeight: '700',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statSep: {
-    width: 1,
-    marginVertical: Spacing.two,
-    backgroundColor: Colors.light.border,
+  decCircle2: {
+    position: 'absolute', width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(245,110,15,0.05)', bottom: 60, right: -20,
   },
 
-  /* Buttons */
-  btnGroup: {
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.four,
+  /* ── White card ── */
+  bottomCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    marginTop: -32,
+    paddingHorizontal: 32,
+    paddingTop: 44,
+    paddingBottom: 36,
+    minHeight: SCREEN_H * 0.35,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+
+  btnContainer: {
+    gap: 16,
   },
   btnPrimary: {
-    backgroundColor: Colors.light.primary,
-    paddingVertical: 18,
-    borderRadius: CustomBorders.radius.lg,
+    flexDirection: 'row',
     alignItems: 'center',
-    ...Shadows.lg,
-    shadowColor: Colors.light.primary,
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#F56E0F',
+    height: 60,
+    borderRadius: 16,
+    shadowColor: '#F56E0F',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  btnPrimaryText: {
-    color: Colors.light.surface,
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
+  btnPrimaryText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800', letterSpacing: 0.4 },
+
   btnSecondary: {
-    backgroundColor: Colors.light.surface,
-    paddingVertical: 18,
-    borderRadius: CustomBorders.radius.lg,
+    height: 60,
+    borderRadius: 16,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.light.border,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
   },
-  btnSecondaryText: {
-    color: Colors.light.text,
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+  btnSecondaryText: { color: '#1A1A2E', fontSize: 16, fontWeight: '800' },
+
+  /* Footer */
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 32,
   },
-});
+  footerText: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  footerBrand: { fontSize: 12, color: '#F56E0F', fontWeight: '800' },
+}));

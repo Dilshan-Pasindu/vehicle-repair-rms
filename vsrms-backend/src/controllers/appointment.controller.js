@@ -17,7 +17,8 @@ const paginate = (query) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getMyAppointments = async (req, res, next) => {
   try {
-    const { page, limit, skip, status } = paginate(req.query);
+    const { page, limit, skip } = paginate(req.query);
+    const { status } = req.query;          // paginate() does not return status
     const filter = { userId: req.user._id };
     if (status) filter.status = status;
 
@@ -169,7 +170,28 @@ const deleteAppointment = async (req, res, next) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/v1/appointments/workshop/:workshopId  — staff/owner/admin
+// Returns all appointments for a specific workshop, paginated with optional ?status=
+// ─────────────────────────────────────────────────────────────────────────────
+const getWorkshopAppointments = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = paginate(req.query);
+    const { status } = req.query;
+    const filter = { workshopId: req.params.workshopId };
+    if (status) filter.status = status;
+
+    const [data, total] = await Promise.all([
+      Appointment.find(filter).populate('userId', 'fullName email').populate('vehicleId', 'registrationNo make model').skip(skip).limit(limit).sort({ scheduledDate: -1 }),
+      Appointment.countDocuments(filter),
+    ]);
+    res.json({ data, page, limit, total, pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
-  getMyAppointments, getAppointment, createAppointment,
+  getMyAppointments, getWorkshopAppointments, getAppointment, createAppointment,
   updateAppointment, updateAppointmentStatus, deleteAppointment,
 };

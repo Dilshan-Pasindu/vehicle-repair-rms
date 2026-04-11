@@ -1,154 +1,218 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  TouchableOpacity,
-  TextInput,
+  View, Text, TouchableOpacity, Modal, TextInput, ScrollView, ActivityIndicator, StatusBar,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet } from 'react-native-unistyles';
+import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
+import { useWorkshops } from '@/features/workshops/queries/queries';
+import { useCreateWorkshop } from '@/features/workshops/queries/mutations';
+import { ErrorScreen } from '@/components/feedback/ErrorScreen';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Workshop } from '@/features/workshops/types/workshops.types';
 
-const BRAND = '#F56E0F';
-const WHITE = '#FFFFFF';
-const BG = '#F9FAFB';
-const TEXT = '#111827';
-const MUTED = '#6B7280';
-const BORDER = '#E5E7EB';
-
-const GARAGES = [
-  { id: 1, name: 'AutoCare Colombo', address: '123 Main St, Colombo 03', status: 'Verified', owners: 2, users: 15 },
-  { id: 2, name: 'Precision Motors', address: '45 Galle Rd, Dehiwala', status: 'Pending', owners: 1, users: 5 },
-  { id: 3, name: 'Hybrid Hub Kandy', address: '88 Kandy Rd, Kandy', status: 'Verified', owners: 3, users: 24 },
-];
-
-export default function GarageManagementScreen() {
+function WorkshopCard({ workshop }: { workshop: Workshop }) {
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={BG} />
-      
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Service Centers</Text>
-        <TouchableOpacity style={styles.addBtn}>
-          <Ionicons name="add" size={24} color={WHITE} />
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.workshopIcon}>
+          <Ionicons name="business" size={24} color="#F56E0F" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.workshopName}>{workshop.name}</Text>
+          <Text style={styles.workshopLocation}>{workshop.address}</Text>
+        </View>
+        <TouchableOpacity style={styles.manageBtn}>
+           <Ionicons name="settings-outline" size={18} color="#6B7280" />
         </TouchableOpacity>
       </View>
-
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={20} color={MUTED} />
-        <TextInput placeholder="Search garages by name or pin..." style={styles.searchInput} />
+      <View style={styles.cardFooter}>
+        <View style={styles.stat}>
+           <Ionicons name="star" size={12} color="#F59E0B" />
+           <Text style={styles.statText}>{workshop.averageRating?.toFixed(1) || '0.0'}</Text>
+        </View>
+        <View style={styles.stat}>
+           <Ionicons name="chatbubble-outline" size={12} color="#6B7280" />
+           <Text style={styles.statText}>{workshop.totalReviews || 0} reviews</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: '#ECFDF5' }]}>
+           <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
+           <Text style={[styles.statusText, { color: '#059669' }]}>Operational</Text>
+        </View>
       </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {GARAGES.map(g => (
-          <TouchableOpacity key={g.id} style={styles.card} activeOpacity={0.7}>
-            <View style={styles.cardHeader}>
-              <View style={styles.nameBlock}>
-                <Text style={styles.garageName}>{g.name}</Text>
-                <View style={[styles.statusBadge, g.status === 'Verified' ? styles.statusVerified : styles.statusPending]}>
-                  <Text style={[styles.statusText, g.status === 'Verified' ? styles.textVerified : styles.textPending]}>
-                    {g.status}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons name="ellipsis-vertical" size={20} color={MUTED} />
-            </View>
-            
-            <Text style={styles.address}>{g.address}</Text>
-            
-            <View style={styles.statsRow}>
-              <View style={styles.miniStat}>
-                <Ionicons name="person-circle-outline" size={16} color={MUTED} />
-                <Text style={styles.miniStatText}>{g.owners} Owners</Text>
-              </View>
-              <View style={styles.statSep} />
-              <View style={styles.miniStat}>
-                <Ionicons name="people-outline" size={16} color={MUTED} />
-                <Text style={styles.miniStatText}>{g.users} Employees</Text>
-              </View>
-            </View>
-
-            <View style={styles.btnGroup}>
-              <TouchableOpacity style={styles.btnOutline}>
-                <Text style={styles.btnOutlineText}>Manage Staff</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btnOutline}>
-                <Text style={styles.btnOutlineText}>Analytics</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-    backgroundColor: WHITE,
-  },
-  headerTitle: { fontSize: 24, fontWeight: '900', color: TEXT, letterSpacing: -0.5 },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' },
+export default function AdminGaragesScreen() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [formData, setFormData] = useState({ name: '', address: '', contactNumber: '', district: 'Colombo' });
+  const { data: workshops, isLoading, isError, refetch } = useWorkshops();
+  const { mutate: create, isPending } = useCreateWorkshop();
 
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    paddingHorizontal: 16,
-    height: 48,
-    backgroundColor: WHITE,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BORDER,
-    marginBottom: 20,
-  },
-  searchInput: { flex: 1, marginLeft: 12, fontSize: 15, fontWeight: '500' },
+  const handleCreate = () => {
+    if (!formData.name || !formData.address) return;
+    create(formData, { 
+      onSuccess: () => {
+        setModalVisible(false);
+        setFormData({ name: '', address: '', contactNumber: '', district: 'Colombo' });
+      }
+    });
+  };
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 120 },
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  nameBlock: { flex: 1 },
-  garageName: { fontSize: 17, fontWeight: '800', color: TEXT, marginBottom: 6 },
-  statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  statusVerified: { backgroundColor: '#ECFDF5' },
-  statusPending: { backgroundColor: '#FFF7ED' },
-  statusText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
-  textVerified: { color: '#059669' },
-  textPending: { color: '#D97706' },
+  return (
+    <ScreenWrapper bg="#1A1A2E">
+      <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
 
-  address: { fontSize: 14, color: MUTED, fontWeight: '500', marginBottom: 16 },
+      {/* ── DARK TOP SECTION ── */}
+      <View style={styles.topSection}>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerSub}>Infrastructure</Text>
+            <Text style={styles.headerTitle}>Garages</Text>
+          </View>
+          <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+            <Ionicons name="add" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.decCircle1} />
+        <View style={styles.decCircle2} />
+      </View>
+
+      {/* ── WHITE CARD SECTION ── */}
+      <View style={[styles.mainCard, { overflow: 'hidden' }]}>
+        {isLoading && !workshops ? (
+           <View style={styles.centered}><ActivityIndicator size="large" color="#F56E0F" /></View>
+        ) : isError ? (
+          <ErrorScreen onRetry={refetch} variant="inline" />
+        ) : (
+          <FlashList<Workshop>
+            data={workshops || []}
+            keyExtractor={item => item._id || item.id}
+            renderItem={({ item }) => <WorkshopCard workshop={item} />}
+            estimatedItemSize={140}
+            onRefresh={refetch}
+            refreshing={isLoading}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={<EmptyState message="No workshops found. Create your first one!" />}
+          />
+        )}
+      </View>
+
+      {/* CREATE MODAL */}
+      <Modal visible={modalVisible} animationType="fade" transparent>
+        <View style={styles.modalBg}>
+          <View style={styles.modalContent}>
+             <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Register Workshop</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                   <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+             </View>
+
+             <ScrollView showsVerticalScrollIndicator={false}>
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Workshop Name</Text>
+                    <TextInput style={styles.input} placeholder="e.g. Master Motors" value={formData.name} onChangeText={t => setFormData(f => ({...f, name:t}))} />
+                 </View>
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Full Address</Text>
+                    <TextInput style={styles.input} placeholder="Street, City" value={formData.address} onChangeText={t => setFormData(f => ({...f, address:t}))} />
+                 </View>
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Contact Number</Text>
+                    <TextInput style={styles.input} placeholder="+94 XX XXX XXXX" value={formData.contactNumber} onChangeText={t => setFormData(f => ({...f, contactNumber:t}))} />
+                 </View>
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>District</Text>
+                    <TextInput style={styles.input} placeholder="Colombo" value={formData.district} onChangeText={t => setFormData(f => ({...f, district:t}))} />
+                 </View>
+             </ScrollView>
+
+             <TouchableOpacity 
+               style={[styles.saveBtn, isPending && { opacity: 0.7 }]} 
+               onPress={handleCreate} 
+               disabled={isPending}
+             >
+                {isPending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Workshop</Text>}
+             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </ScreenWrapper>
+  );
+}
+
+const styles = StyleSheet.create((theme) => ({
+  topSection: { 
+    paddingHorizontal: theme.spacing.screenPadding, 
+    paddingTop: 16, 
+    paddingBottom: theme.spacing.headerBottom, 
+    position: 'relative', 
+    overflow: 'hidden' 
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
+  headerSub: { 
+    fontSize: theme.fonts.sizes.caption, 
+    color: 'rgba(255,255,255,0.7)', 
+    fontWeight: '700', 
+    textTransform: 'uppercase', 
+    letterSpacing: 1 
+  },
+  headerTitle: { 
+    fontSize: theme.fonts.sizes.pageTitle, 
+    color: '#FFFFFF', 
+    fontWeight: '900', 
+    letterSpacing: -0.5, 
+    marginTop: 4 
+  },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F56E0F', alignItems: 'center', justifyContent: 'center', shadowColor: '#F56E0F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+
+  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
+  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+
+  mainCard: { 
+    backgroundColor: '#FFFFFF', 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32, 
+    marginTop: theme.spacing.cardOverlap, 
+    flex: 1, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: -4 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 20, 
+    elevation: 16 
+  },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  list: { 
+    paddingHorizontal: theme.spacing.screenPadding, 
+    paddingTop: 24, 
+    paddingBottom: 130 
+  },
+
+  card: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 18, marginBottom: 16, borderWidth: 1.5, borderColor: '#F3F4F6', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
+  workshopIcon: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center' },
+  workshopName: { fontSize: 16, fontWeight: '900', color: '#1A1A2E' },
+  workshopLocation: { fontSize: 13, color: '#9CA3AF', fontWeight: '500', marginTop: 1 },
+  manageBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center' },
   
-  statsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  miniStat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  miniStatText: { fontSize: 13, fontWeight: '600', color: MUTED },
-  statSep: { width: 1, height: 12, backgroundColor: BORDER },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statText: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginLeft: 'auto' },
+  statusDot: { width: 5, height: 5, borderRadius: 2.5 },
+  statusText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
 
-  btnGroup: { flexDirection: 'row', gap: 12 },
-  btnOutline: {
-    flex: 1,
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  btnOutlineText: { fontSize: 13, fontWeight: '700', color: TEXT },
-});
+  modalBg: { flex: 1, backgroundColor: 'rgba(26,26,46,0.8)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, maxHeight: '85%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: '#1A1A2E' },
+  inputGroup: { marginBottom: 16 },
+  inputLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  input: { backgroundColor: '#F9FAFB', borderRadius: 14, height: 50, paddingHorizontal: 16, fontSize: 15, color: '#1A1A2E', borderWidth: 1, borderColor: '#E5E7EB' },
+  saveBtn: { backgroundColor: '#F56E0F', borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center', marginTop: 16, shadowColor: '#F56E0F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6 },
+  saveBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' }
+}));

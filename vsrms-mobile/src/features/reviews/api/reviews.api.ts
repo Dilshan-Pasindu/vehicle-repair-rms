@@ -13,10 +13,10 @@ export const fetchMyReviews = async (params?: Record<string, any>): Promise<Revi
 
 export const createReview = async (payload: Partial<Review>): Promise<Review> => {
   const { data } = await client.post('/reviews', payload);
-  return data.data || data;
+  return data.review || data;
 };
 
 export const updateReview = async (id: string, payload: Partial<Review>): Promise<Review> => {
   const { data } = await client.put(`/reviews/${id}`, payload);
-  return data.data || data;
+  return data.review || data;
 };
