@@ -14,4 +14,8 @@ module.exports = {
     '!src/config/**',
   ],
   modulePathIgnorePatterns: ['<rootDir>/../vsrms-mobile/'],
+  moduleNameMapper: {
+    '^jose$': '<rootDir>/src/utils/__tests__/empty-mock.js',
+    '^jwks-rsa$': '<rootDir>/src/utils/__tests__/empty-mock.js',
+  },
 };
