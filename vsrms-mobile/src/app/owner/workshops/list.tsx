@@ -359,8 +359,8 @@ const pickerStyles = StyleSheet.create(() => ({
 // ─── Main styles ──────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create((theme) => ({
-  topSection: { paddingHorizontal: theme.spacing.screenPadding, paddingTop: 16, paddingBottom: theme.spacing.headerBottom, position: 'relative', overflow: 'hidden' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 10, marginBottom: 16 },
+  topSection: { paddingHorizontal: theme.spacing.screenPadding, paddingTop: 16, paddingBottom: 60, position: 'relative', overflow: 'hidden', backgroundColor: '#1A1A2E' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 10, marginBottom: 24, marginTop: 12 },
   headerSub: { fontSize: theme.fonts.sizes.caption, color: 'rgba(255,255,255,0.7)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   headerTitle: { fontSize: theme.fonts.sizes.pageTitle, color: '#FFFFFF', fontWeight: '900', letterSpacing: -0.5, marginTop: 4 },
   addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F56E0F', alignItems: 'center', justifyContent: 'center', shadowColor: '#F56E0F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
@@ -371,8 +371,8 @@ const styles = StyleSheet.create((theme) => ({
   summaryLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: theme.spacing.cardOverlap, flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },

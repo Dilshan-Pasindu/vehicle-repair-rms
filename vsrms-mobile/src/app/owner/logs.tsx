@@ -84,6 +84,20 @@ export default function OwnerLogsScreen() {
   
   const { data, isLoading, isError, refetch } = useWorkshopRecords(targetWorkshopId ?? '');
 
+  const list = (
+    <FlashList
+      data={(data?.data ?? []) as any}
+      renderItem={({ item }) => <RecordRow record={item as any} />}
+      // @ts-ignore
+      estimatedItemSize={180}
+      onRefresh={refetch}
+      refreshing={isLoading}
+      keyExtractor={(r: any) => r.id || r._id || Math.random().toString()}
+      contentContainerStyle={styles.list}
+      ListEmptyComponent={<EmptyState message="No service records yet for this workshop." />}
+    />
+  );
+
   return (
     <ScreenWrapper bg="#1A1A2E">
       <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
@@ -114,18 +128,7 @@ export default function OwnerLogsScreen() {
           </View>
         ) : isError ? (
           <ErrorScreen onRetry={refetch} variant="inline" />
-        ) : (
-          <FlashList
-            data={(data?.data ?? []) as any}
-            renderItem={({ item }) => <RecordRow record={item as any} />}
-            estimatedItemSize={180}
-            onRefresh={refetch}
-            refreshing={isLoading}
-            keyExtractor={(r: any) => r.id || r._id || Math.random().toString()}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={<EmptyState message="No service records yet for this workshop." />}
-          />
-        )}
+        ) : list}
       </View>
     </ScreenWrapper>
   );
@@ -135,11 +138,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: {
     paddingHorizontal: theme.spacing.screenPadding,
     paddingTop: 16,
-    paddingBottom: theme.spacing.headerBottom,
+    paddingBottom: 60,
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 24, marginTop: 12 },
   headerSub: {
     fontSize: theme.fonts.sizes.caption,
     color: 'rgba(255,255,255,0.7)',
@@ -175,8 +179,8 @@ const styles = StyleSheet.create((theme) => ({
   },
   countText: { fontSize: 18, fontWeight: '900', color: '#F56E0F' },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: {
     backgroundColor: '#FFFFFF',

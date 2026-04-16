@@ -83,6 +83,20 @@ export default function UserManagementScreen() {
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  const list = (
+    <FlashList<User>
+      data={users}
+      keyExtractor={u => u.id ?? u.email}
+      renderItem={({ item }) => <UserCard user={item} onDeactivate={handleDeactivate} />}
+      // @ts-ignore
+      estimatedItemSize={120}
+      onRefresh={refetch}
+      refreshing={isLoading}
+      contentContainerStyle={styles.list}
+      ListEmptyComponent={<EmptyState message="No users matching your search." />}
+    />
+  );
+
   return (
     <ScreenWrapper bg="#1A1A2E">
       <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
@@ -124,19 +138,7 @@ export default function UserManagementScreen() {
           <View style={styles.centered}><ActivityIndicator size="large" color="#F56E0F" /></View>
         ) : isError ? (
           <ErrorScreen onRetry={refetch} variant="inline" />
-        ) : (
-          // @ts-expect-error - FlashList requires estimatedItemSize dynamically
-          <FlashList<User>
-            data={users}
-            keyExtractor={u => u.id ?? u.email}
-            renderItem={({ item }) => <UserCard user={item} onDeactivate={handleDeactivate} />}
-            estimatedItemSize={120}
-            onRefresh={refetch}
-            refreshing={isLoading}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={<EmptyState message="No users matching your search." />}
-          />
-        )}
+        ) : list}
       </View>
     </ScreenWrapper>
   );
@@ -146,11 +148,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: { 
     paddingHorizontal: theme.spacing.screenPadding, 
     paddingTop: 16, 
-    paddingBottom: theme.spacing.headerBottom, 
+    paddingBottom: 60, 
     position: 'relative', 
-    overflow: 'hidden' 
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 24, marginTop: 12 },
   headerSub: { 
     fontSize: theme.fonts.sizes.caption, 
     color: 'rgba(255,255,255,0.7)', 
@@ -172,8 +175,8 @@ const styles = StyleSheet.create((theme) => ({
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 14, paddingHorizontal: 16, height: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', zIndex: 10 },
   searchInput: { flex: 1, color: '#FFF', fontSize: 14, fontWeight: '600' },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: { 
     backgroundColor: '#FFFFFF', 

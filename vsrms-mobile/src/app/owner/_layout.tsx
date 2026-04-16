@@ -33,7 +33,6 @@ export default function GarageLayout() {
       
       {/* Hidden routes — not in tab bar */}
       <Tabs.Screen name="jobs"              options={{ href: null }} />
-      <Tabs.Screen name="staff"             options={{ href: null }} />
       <Tabs.Screen name="create-record"     options={{ href: null }} />
       <Tabs.Screen name="workshops/[id]"    options={{ href: null }} />
     </Tabs>

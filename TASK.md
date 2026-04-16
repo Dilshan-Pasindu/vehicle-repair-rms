@@ -51,6 +51,12 @@
 | 2026-04-13 | M3 Workshops | `WorkshopMap.tsx` was a dead placeholder, never imported by any screen | **FIXED** | Claude |
 | 2026-04-13 | General | `emulator-nvidia.sh` forced `-no-snapshot-load` (cold boot every time) and hardcoded GPU mode | **FIXED** | Claude |
 | 2026-04-13 | General | `.bashrc` sourced `~/.deno/env` without guard; `emulator-nvidia` alias bypassed fixed script | **FIXED** | Claude |
+| 2026-04-16 | M3/M5 | `BookAppointmentScreen` appointment card was overlapping the header | **FIXED** | Claude |
+| 2026-04-16 | M1 | Settings screen had redundant back button and non-standard header padding | **FIXED** | Claude |
+| 2026-04-16 | M1 | Owner technician registration had no password field — account stayed pending in Asgardeo | **FIXED** | Claude |
+| 2026-04-16 | Shared | `{/* @ts-expect-error */}` in JSX ternaries broke syntax in garages, users, logs, tracker | **FIXED** | Claude |
+| 2026-04-16 | M4 | `AppointmentCard` had no `isTechnician`/`onFinalize` props — Technician tracker had type errors | **FIXED** | Claude |
+| 2026-04-16 | M1 | `SettingsScreen` `phone` prop caused `Partial<User>` type error | **FIXED** | Claude |
 
 ---
 
@@ -151,14 +157,16 @@
 
 ### M1 — Auth & User (Mobile)
 - [x] `features/auth/types/auth.types.ts` — User interface matching API shape
-- [x] `features/auth/api/auth.api.ts` — login, register, syncProfile, getMe, updateMe
+- [x] `features/auth/api/auth.api.ts` — login, register, syncProfile, getMe, updateMe; `RegisterStaffPayload` now includes `password` field
 - [x] `features/auth/queries/auth.keys.ts, mutations.ts, queries.ts`
 - [x] `features/auth/screens/LoginScreen.tsx` — real `handleSignIn` via `authApi.login()` + `signIn(token)`; AppLogo; theme tokens
 - [x] `features/auth/screens/RegisterScreen.tsx` — AppLogo; theme tokens; all hardcoded hex replaced
+- [x] `features/auth/screens/SettingsScreen.tsx` — **Premium UI overhaul**: dark header (paddingBottom: 60), overlapping white card, decorative ambient circles, avatar + role badge, profile edit + sign out; back button removed
 - [x] `app/auth/login.tsx`, `app/auth/register.tsx` — route wrappers
 - [x] `app/customer/index.tsx` — owner profile screen (show user.fullName, role badge, stats, sign-out)
 - [x] `app/admin/users.tsx` — admin: paginated user list with role badges, search, deactivate action (calls DELETE /auth/users/:id)
 - [x] `app/admin/index.tsx` — admin dashboard screen (fixed StatusBar + trend props)
+- [x] `app/owner/staff.tsx` — **Password field added** to Register Technician modal; show/hide toggle; 8-char validation; backend `POST /auth/staff` now creates full Asgardeo account immediately
 
 ### M2 — Vehicle Management (Mobile)
 - [x] `features/vehicles/types/vehicles.types.ts`
@@ -271,6 +279,9 @@
 - [x] Vehicle image upload UI (expo-image-picker → POST /vehicles/:id/image)
 - [x] Custom Animated Tab Bar with sliding pill indicator
 - [x] User AvatarMenu with Modal grouping for Settings and Sign Out
+- [x] **Header standardisation** — dark header + overlapping white card + ambient circles applied to all root screens (Owner, Customer, Admin, Technician)
+- [x] **Settings Screen premium overhaul** — no back button, standardised padding/circles, profile edit, role badge
+- [x] **AppointmentCard extended** — `isTechnician?` + `onFinalize?` props; conditional Mark Complete CTA for technician tracker
 
 ### Security Hardening Checklist
 - [ ] Confirm express-validator chains on every POST and PUT route

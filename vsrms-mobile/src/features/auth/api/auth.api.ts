@@ -38,6 +38,7 @@ export interface RegisterStaffPayload {
   firstName:  string;
   lastName:   string;
   email:      string;
+  password:   string;
   phone?:     string;
   workshopId: string; // which workshop to assign this technician to
 }
@@ -47,7 +48,3 @@ export const registerStaff = async (payload: RegisterStaffPayload): Promise<User
   return data.user || data;
 };
 
-export const getWorkshopStaff = async (params?: Record<string, any>): Promise<{ data: User[]; total: number }> => {
-  const { data } = await client.get('/auth/staff', { params });
-  return data;
-};

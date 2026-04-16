@@ -135,11 +135,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: { 
     paddingHorizontal: theme.spacing.screenPadding, 
     paddingTop: 16, 
-    paddingBottom: theme.spacing.headerBottom, 
+    paddingBottom: 60, 
     position: 'relative', 
-    overflow: 'hidden' 
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 24, marginTop: 12 },
   headerSub: { 
     fontSize: theme.fonts.sizes.caption, 
     color: 'rgba(255,255,255,0.7)', 
@@ -156,8 +157,8 @@ const styles = StyleSheet.create((theme) => ({
   },
   badge: { width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: { 
     backgroundColor: '#FFFFFF', 

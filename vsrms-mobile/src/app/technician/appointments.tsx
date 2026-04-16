@@ -152,11 +152,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: {
     paddingHorizontal: theme.spacing.screenPadding,
     paddingTop: 16,
-    paddingBottom: theme.spacing.headerBottom,
+    paddingBottom: 60,
     position: 'relative',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 20 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 24, marginTop: 12 },
   headerSub: {
     fontSize: theme.fonts.sizes.caption,
     color: 'rgba(255,255,255,0.7)',
@@ -176,12 +177,12 @@ const styles = StyleSheet.create((theme) => ({
   tabContainer: { flexDirection: 'row', gap: 24 },
   tab: { paddingVertical: 8, position: 'relative' },
   activeTab: {},
-  tabText: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
+  tabText: { fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
   activeTabText: { color: '#FFFFFF' },
   activeLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: '#F56E0F', borderRadius: 2 },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: {
     backgroundColor: '#FFFFFF',

@@ -44,7 +44,19 @@ const protect = async (req, res, next) => {
     const role = token.split('-').slice(1).join('-'); // e.g., customer, admin, workshop_owner, workshop_staff
     const mockEmail = `${role}@bypass.com`;
 
-    // Try to find a real workshop to avoid 404s (cached after first lookup)
+    try {
+      // 1. Try to find the seeded mock user first
+      const dbUser = await User.findOne({ asgardeoSub: token });
+      if (dbUser) {
+        req.jwtClaims = { sub: token, email: dbUser.email, name: dbUser.fullName };
+        req.user = dbUser;
+        return next();
+      }
+    } catch (e) {
+      console.warn('[auth] Mock DB lookup failed, falling back to in-memory mock');
+    }
+
+    // 2. Fallback to in-memory mock if DB lookup fails (e.g. not seeded yet)
     let mockWSId = _cachedMockWSId || '607f1f77bcf86cd799439012';
     if (!_cachedMockWSId) {
       try {
@@ -53,9 +65,7 @@ const protect = async (req, res, next) => {
           _cachedMockWSId = liveWS._id.toString();
           mockWSId = _cachedMockWSId;
         }
-      } catch (e) {
-        // Workshop model not ready yet — use static fallback ID silently
-      }
+      } catch (e) {}
     }
 
     const mockUser = {
@@ -68,12 +78,7 @@ const protect = async (req, res, next) => {
       workshopId: (role === 'workshop_owner' || role === 'workshop_staff') ? mockWSId : undefined,
     };
     
-    // Crucial: Set jwtClaims so sync-profile logic doesn't crash
-    req.jwtClaims = {
-      sub: token,
-      email: mockEmail,
-      name: mockUser.fullName
-    };
+    req.jwtClaims = { sub: token, email: mockEmail, name: mockUser.fullName };
     req.user = mockUser;
     return next();
   }

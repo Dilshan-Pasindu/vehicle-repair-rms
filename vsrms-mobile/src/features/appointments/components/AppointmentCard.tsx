@@ -33,12 +33,19 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-LK', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function AppointmentCard({ appointment }: { appointment: Appointment }) {
+interface AppointmentCardProps {
+  appointment:    Appointment;
+  isTechnician?:  boolean;
+  onFinalize?:    () => void;
+}
+
+export function AppointmentCard({ appointment, isTechnician = false, onFinalize }: AppointmentCardProps) {
   const router = useRouter();
   const status = appointment.status ?? 'pending';
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
 
   const handlePress = () => {
+    if (isTechnician) return; // technician taps the Finalize button, not the card
     const id = appointment._id || appointment.id;
     if (id) {
       router.push(`/customer/schedule/${id}`);
@@ -47,7 +54,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
 
   return (
     <TouchableOpacity 
-      activeOpacity={0.8} 
+      activeOpacity={isTechnician ? 1 : 0.8} 
       onPress={handlePress}
     >
       <View style={[styles.card, { borderLeftColor: cfg.accent }]}>
@@ -84,6 +91,15 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
             <Text style={styles.notesText}>{appointment.notes}</Text>
           </View>
         ) : null}
+
+        {isTechnician && onFinalize && (
+          <View style={styles.actionContainer}>
+            <TouchableOpacity style={styles.actionBtn} onPress={onFinalize} activeOpacity={0.85}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.actionBtnText}>Mark Complete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
