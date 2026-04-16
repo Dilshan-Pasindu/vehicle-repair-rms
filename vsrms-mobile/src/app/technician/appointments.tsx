@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StatusBar, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
@@ -8,39 +9,40 @@ import { useAuth } from '@/hooks';
 import { useWorkshopAppointments } from '@/features/appointments/queries/queries';
 import { useUpdateAppointmentStatus } from '@/features/appointments/queries/mutations';
 import { Appointment } from '@/features/appointments/types/appointments.types';
+import { AppointmentCard } from '@/features/appointments/components/AppointmentCard';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { EmptyState } from '@/components/ui/EmptyState';
 
-function ApptCard({ 
-  appt, 
-  onAccept 
-}: { 
-  appt: Appointment; 
-  onAccept: (id: string) => void 
+function ApptCard({
+  appt,
+  onAccept
+}: {
+  appt: Appointment;
+  onAccept: (id: string) => void
 }) {
-  const customerName = typeof appt.userId === 'object' ? appt.userId.fullName : 'Customer';
-  const vehicleName = typeof appt.vehicleId === 'object' ? `${appt.vehicleId.make} ${appt.vehicleId.model}` : 'Vehicle';
+  const customerName = appt.userId && typeof appt.userId === 'object' ? appt.userId.fullName : 'Customer';
+  const vehicleName = appt.vehicleId && typeof appt.vehicleId === 'object' ? `${appt.vehicleId.make} ${appt.vehicleId.model}` : 'Vehicle';
 
   return (
     <View style={styles.card}>
       <View style={styles.cardBody}>
         <View style={styles.statusRow}>
-           <View style={[styles.pill, { backgroundColor: appt.status === 'confirmed' ? '#ECFDF5' : '#FFFBEB' }]}>
-              <Text style={[styles.pillText, { color: appt.status === 'confirmed' ? '#059669' : '#D97706' }]}>
-                {appt.status.toUpperCase()}
-              </Text>
-           </View>
-           <Text style={styles.dateText}>{new Date(appt.scheduledDate).toLocaleDateString()}</Text>
+          <View style={[styles.pill, { backgroundColor: appt.status === 'confirmed' ? '#ECFDF5' : '#FFFBEB' }]}>
+            <Text style={[styles.pillText, { color: appt.status === 'confirmed' ? '#059669' : '#D97706' }]}>
+              {appt.status.toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.dateText}>{new Date(appt.scheduledDate).toLocaleDateString()}</Text>
         </View>
-        
+
         <Text style={styles.serviceTitle}>{appt.serviceType}</Text>
         <Text style={styles.ownerText}>{customerName} • {vehicleName}</Text>
       </View>
 
       {appt.status === 'pending' && (
         <TouchableOpacity style={styles.acceptBtn} onPress={() => onAccept(appt._id!)}>
-           <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
-           <Text style={styles.acceptText}>Accept Job</Text>
+          <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.acceptText}>Accept Job</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -48,14 +50,45 @@ function ApptCard({
 }
 
 export default function TechnicianAppointmentsScreen() {
+  const router = useRouter();
+  const { status: initialStatus } = useLocalSearchParams<{ status: 'pending' | 'confirmed' | 'completed' }>();
   const { user } = useAuth();
-  const [status, setStatus] = useState<'pending' | 'confirmed' | 'completed'>('pending');
-  
+  const [status, setStatus] = useState<'pending' | 'confirmed' | 'completed'>(initialStatus || 'pending');
+
   const { data, isLoading, isError, refetch } = useWorkshopAppointments(user?.workshopId, status);
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
 
+  // Deduplicate by id — guards against backend returning same appointment twice
+  const appointments = React.useMemo(() => {
+    const seen = new Set<string>();
+    return (data ?? []).filter(a => {
+      const key = (a as any).id || (a as any)._id;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [data]);
+
+  // Handle incoming status from params
+  React.useEffect(() => {
+    if (initialStatus) {
+      setStatus(initialStatus);
+    }
+  }, [initialStatus]);
+
   const handleAccept = (id: string) => {
     updateStatus({ id, status: 'confirmed' });
+  };
+
+  const handleStart = (id: string) => {
+    updateStatus({ id, status: 'in_progress' });
+  };
+
+  const handleFinalize = (id: string) => {
+    router.push({ 
+      pathname: '/technician/record', 
+      params: { appointmentId: id } 
+    } as any);
   };
 
   return (
@@ -74,8 +107,8 @@ export default function TechnicianAppointmentsScreen() {
         {/* Custom Tabs */}
         <View style={styles.tabContainer}>
           {(['pending', 'confirmed', 'completed'] as const).map((s) => (
-            <TouchableOpacity 
-              key={s} 
+            <TouchableOpacity
+              key={s}
               onPress={() => setStatus(s)}
               style={[styles.tab, status === s && styles.activeTab]}
             >
@@ -98,16 +131,16 @@ export default function TechnicianAppointmentsScreen() {
         ) : isError ? (
           <ErrorScreen onRetry={refetch} variant="inline" />
         ) : (
-          // @ts-expect-error - FlashList requires estimatedItemSize dynamically
           <FlashList<Appointment>
-             data={data || []}
-             renderItem={({ item }) => <ApptCard appt={item} onAccept={handleAccept} />}
-             estimatedItemSize={140}
-             onRefresh={refetch}
-             refreshing={isLoading}
-             keyExtractor={(a) => a._id || a.id || Math.random().toString()}
-             contentContainerStyle={styles.list}
-             ListEmptyComponent={<EmptyState message={`No ${status} tasks assigned yet.`} />}
+            data={data || []}
+            renderItem={({ item }) => <ApptCard appt={item} onAccept={handleAccept} />}
+            // @ts-expect-error - FlashList requires estimatedItemSize dynamically
+            estimatedItemSize={140}
+            onRefresh={refetch}
+            refreshing={isLoading}
+            keyExtractor={(a) => a._id || a.id || Math.random().toString()}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={<EmptyState message={`No ${status} tasks assigned yet.`} />}
           />
         )}
       </View>
@@ -116,67 +149,68 @@ export default function TechnicianAppointmentsScreen() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  topSection: { 
-    paddingHorizontal: theme.spacing.screenPadding, 
-    paddingTop: 16, 
-    paddingBottom: theme.spacing.headerBottom, 
-    position: 'relative', 
-    overflow: 'hidden' 
+  topSection: {
+    paddingHorizontal: theme.spacing.screenPadding,
+    paddingTop: 16,
+    paddingBottom: 60,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 20 },
-  headerSub: { 
-    fontSize: theme.fonts.sizes.caption, 
-    color: 'rgba(255,255,255,0.7)', 
-    fontWeight: '700', 
-    textTransform: 'uppercase', 
-    letterSpacing: 1 
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 24, marginTop: 12 },
+  headerSub: {
+    fontSize: theme.fonts.sizes.caption,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1
   },
-  headerTitle: { 
-    fontSize: theme.fonts.sizes.pageTitle, 
-    color: '#FFFFFF', 
-    fontWeight: '900', 
-    letterSpacing: -0.5, 
-    marginTop: 4 
+  headerTitle: {
+    fontSize: theme.fonts.sizes.pageTitle,
+    color: '#FFFFFF',
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    marginTop: 4
   },
 
-  tabContainer: { flexDirection: 'row', gap: 20, zIndex: 10 },
+  tabScroll: { zIndex: 10 },
+  tabContainer: { flexDirection: 'row', gap: 24 },
   tab: { paddingVertical: 8, position: 'relative' },
   activeTab: {},
-  tabText: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
+  tabText: { fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
   activeTabText: { color: '#FFFFFF' },
   activeLine: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: '#F56E0F', borderRadius: 2 },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
-  mainCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderTopLeftRadius: 32, 
-    borderTopRightRadius: 32, 
-    marginTop: theme.spacing.cardOverlap, 
-    flex: 1, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: -4 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 20, 
-    elevation: 16 
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: theme.spacing.cardOverlap,
+    flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 16
   },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { 
-    paddingHorizontal: theme.spacing.screenPadding, 
-    paddingTop: 24, 
-    paddingBottom: 130 
+  list: {
+    paddingHorizontal: theme.spacing.screenPadding,
+    paddingTop: 24,
+    paddingBottom: 130
   },
-
-  card: { backgroundColor: '#FFFFFF', borderRadius: 22, marginBottom: 16, borderWidth: 1.5, borderColor: '#F3F4F6', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 2 },
+  
+  card: { backgroundColor: '#FFFFFF', borderRadius: 24, marginBottom: 16, borderWidth: 1.5, borderColor: '#F3F4F6', overflow: 'hidden' },
   cardBody: { padding: 18 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   pillText: { fontSize: 9, fontWeight: '800' },
-  dateText: { fontSize: 12, fontWeight: '700', color: '#9CA3AF' },
-  serviceTitle: { fontSize: 17, fontWeight: '900', color: '#1A1A2E', letterSpacing: -0.3 },
-  ownerText: { fontSize: 13, color: '#6B7280', fontWeight: '600', marginTop: 4 },
-
-  acceptBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F56E0F', paddingVertical: 14 },
-  acceptText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14, textTransform: 'uppercase' },
+  dateText: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
+  serviceTitle: { fontSize: 16, fontWeight: '900', color: '#1A1A2E', marginBottom: 4 },
+  ownerText: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
+  acceptBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F56E0F', paddingVertical: 14, gap: 8 },
+  acceptText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
 }));

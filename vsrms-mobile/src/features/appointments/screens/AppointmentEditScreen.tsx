@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, ActivityIndicator, StatusBar,
@@ -7,11 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native-unistyles';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { useVehicles } from '@/features/vehicles/queries/queries';
-import { useWorkshops } from '@/features/workshops/queries/queries';
-import { useCreateAppointment } from '../queries/mutations';
+import { useAppointment } from '../queries/queries';
+import { useUpdateAppointment } from '../queries/mutations';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
+import { Button } from '@/components/ui/Button';
 
 const SERVICE_TYPES = [
   'Oil Change',
@@ -25,37 +25,39 @@ const SERVICE_TYPES = [
   'Other',
 ];
 
-export function BookAppointmentScreen() {
+export function AppointmentEditScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ workshopId?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { data: vehicles = [], isLoading: vLoading, isError: vError, refetch: vRefetch } = useVehicles();
-  const { data: workshops = [], isLoading: wLoading, isError: wError, refetch: wRefetch } = useWorkshops();
+  const { data: appointment, isLoading, isError, refetch } = useAppointment(id as string);
+  const { mutate: update, isPending } = useUpdateAppointment();
 
-  const [vehicleId, setVehicleId] = useState('');
-  const [workshopId, setWorkshopId] = useState(params.workshopId ?? '');
   const [serviceType, setServiceType] = useState('');
   const [customService, setCustomService] = useState('');
-  
-  const tomorrow = new Date(Date.now() + 86400000);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const [dateStr, setDateStr] = useState(
-    `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`
-  );
+  const [dateStr, setDateStr] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const selectedWorkshop = workshops.find(w => (w._id === workshopId || w.id === workshopId));
-  const availableServices = (selectedWorkshop?.servicesOffered && selectedWorkshop.servicesOffered.length > 0)
-    ? [...selectedWorkshop.servicesOffered, 'Other']
+  const workshop = typeof appointment?.workshopId === 'object' ? appointment.workshopId : null;
+  const availableServices = (workshop?.servicesOffered && workshop.servicesOffered.length > 0)
+    ? [...workshop.servicesOffered, 'Other']
     : SERVICE_TYPES;
 
-  const { mutate: book, isPending } = useCreateAppointment();
+  useEffect(() => {
+    if (appointment) {
+      const isCustom = !SERVICE_TYPES.includes(appointment.serviceType);
+      setServiceType(isCustom ? 'Other' : appointment.serviceType);
+      if (isCustom) setCustomService(appointment.serviceType);
+      
+      const d = new Date(appointment.scheduledDate);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      setDateStr(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+      setNotes(appointment.notes || '');
+    }
+  }, [appointment]);
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!vehicleId) e.vehicleId = 'Select a vehicle';
-    if (!workshopId) e.workshopId = 'Select a workshop';
     if (!serviceType) e.serviceType = 'Select a service type';
     
     const parsedDate = new Date(dateStr);
@@ -66,24 +68,25 @@ export function BookAppointmentScreen() {
     return Object.keys(e).length === 0;
   };
 
-  const handleBook = () => {
+  const handleUpdate = () => {
     if (!validate()) return;
     const finalService = serviceType === 'Other' ? customService.trim() : serviceType;
     if (!finalService) { setErrors(e => ({ ...e, serviceType: 'Describe the service' })); return; }
 
-    book(
+    update(
       { 
-        vehicleId, 
-        workshopId, 
-        serviceType: finalService, 
-        scheduledDate: new Date(dateStr).toISOString(), 
-        notes: notes.trim() || undefined 
+        id: id as string, 
+        payload: { 
+          serviceType: finalService, 
+          scheduledDate: new Date(dateStr).toISOString(), 
+          notes: notes.trim() || undefined 
+        } 
       },
       { onSuccess: () => router.back() },
     );
   };
 
-  if (vLoading || wLoading) return (
+  if (isLoading) return (
     <ScreenWrapper bg="#1A1A2E">
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color="#F56E0F" />
@@ -91,8 +94,7 @@ export function BookAppointmentScreen() {
     </ScreenWrapper>
   );
 
-  if (vError) return <ErrorScreen onRetry={vRefetch} />;
-  if (wError) return <ErrorScreen onRetry={wRefetch} />;
+  if (isError || !appointment) return <ErrorScreen onRetry={refetch} />;
 
   return (
     <ScreenWrapper bg="#1A1A2E">
@@ -105,8 +107,8 @@ export function BookAppointmentScreen() {
             <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <View>
-            <Text style={styles.headerSub}>New Booking</Text>
-            <Text style={styles.headerTitle}>Book Appointment</Text>
+            <Text style={styles.headerSub}>Modify Booking</Text>
+            <Text style={styles.headerTitle}>Reschedule</Text>
           </View>
           <View style={{ width: 44 }} />
         </View>
@@ -117,72 +119,7 @@ export function BookAppointmentScreen() {
       {/* ── WHITE CARD SECTION ── */}
       <View style={styles.mainCard}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-          {/* VEHICLE */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Select Vehicle *</Text>
-            {vehicles.length === 0
-              ? <Text style={styles.emptyHint}>No vehicles registered. Add one first.</Text>
-              : vehicles.map(v => (
-                <TouchableOpacity
-                  key={v._id || v.id}
-                  style={[
-                    styles.selectCard, 
-                    !!vehicleId && (vehicleId === v._id || vehicleId === v.id) && styles.selectCardActive
-                  ]}
-                  onPress={() => setVehicleId(v._id || v.id!)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.selectCardIcon}>
-                    <Ionicons 
-                      name="car-sport-outline" 
-                      size={20} 
-                      color={(!!vehicleId && (vehicleId === v._id || vehicleId === v.id)) ? '#F56E0F' : '#6B7280'} 
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[
-                      styles.selectCardTitle, 
-                      !!vehicleId && (vehicleId === v._id || vehicleId === v.id) && styles.selectCardTitleActive
-                    ]}>
-                      {v.make} {v.model} ({v.year})
-                    </Text>
-                    <Text style={styles.selectCardSub}>{v.registrationNo}</Text>
-                  </View>
-                  {(!!vehicleId && (vehicleId === v._id || vehicleId === v.id)) && <Ionicons name="checkmark-circle" size={20} color="#F56E0F" />}
-                </TouchableOpacity>
-              ))
-            }
-            {errors.vehicleId && <Text style={styles.errorText}>{errors.vehicleId}</Text>}
-          </View>
-
-          {/* WORKSHOP */}
-          {!params.workshopId && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Select Workshop *</Text>
-              {workshops.map(w => (
-                <TouchableOpacity
-                  key={w._id ?? w.id}
-                  style={[styles.selectCard, workshopId === (w._id ?? w.id) && styles.selectCardActive]}
-                  onPress={() => setWorkshopId(w._id ?? w.id!)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.selectCardIcon}>
-                    <Ionicons name="business-outline" size={20} color={workshopId === (w._id ?? w.id) ? '#F56E0F' : '#6B7280'} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.selectCardTitle, workshopId === (w._id ?? w.id) && styles.selectCardTitleActive]}>
-                      {w.name}
-                    </Text>
-                    <Text style={styles.selectCardSub}>{w.district} · ⭐ {w.averageRating.toFixed(1)}</Text>
-                  </View>
-                  {workshopId === (w._id ?? w.id) && <Ionicons name="checkmark-circle" size={20} color="#F56E0F" />}
-                </TouchableOpacity>
-              ))}
-              {errors.workshopId && <Text style={styles.errorText}>{errors.workshopId}</Text>}
-            </View>
-          )}
-
+          
           {/* SERVICE TYPE */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Service Type *</Text>
@@ -212,7 +149,7 @@ export function BookAppointmentScreen() {
 
           {/* DATE */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Preferred Date *</Text>
+            <Text style={styles.sectionLabel}>Reschedule Date *</Text>
             <View style={styles.dateInputRow}>
               <Ionicons name="calendar-outline" size={18} color="#F56E0F" />
               <TextInput
@@ -226,16 +163,16 @@ export function BookAppointmentScreen() {
                 maxLength={10}
               />
             </View>
-            <Text style={styles.dateHint}>Enter date in YYYY-MM-DD format (must be tomorrow or later)</Text>
+            <Text style={styles.dateHint}>Format: YYYY-MM-DD</Text>
             {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
           </View>
 
           {/* NOTES */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Notes <Text style={styles.optional}>(optional)</Text></Text>
+            <Text style={styles.sectionLabel}>Updated Notes <Text style={styles.optional}>(optional)</Text></Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Any specific concerns or instructions..."
+              placeholder="Any new instructions..."
               placeholderTextColor="#9CA3AF"
               value={notes}
               onChangeText={setNotes}
@@ -245,21 +182,12 @@ export function BookAppointmentScreen() {
             />
           </View>
 
-          {/* SUBMIT */}
-          <TouchableOpacity
-            style={[styles.bookBtn, isPending && styles.bookBtnDisabled]}
-            onPress={handleBook}
-            disabled={isPending}
-            activeOpacity={0.85}
-          >
-            {isPending
-              ? <ActivityIndicator color="#FFFFFF" />
-              : <>
-                <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.bookBtnText}>Confirm Booking</Text>
-              </>
-            }
-          </TouchableOpacity>
+          <Button 
+            title="Update Appointment" 
+            onPress={handleUpdate}
+            loading={isPending}
+            style={styles.actionBtn}
+          />
 
         </ScrollView>
       </View>
@@ -305,25 +233,10 @@ const styles = StyleSheet.create((theme) => ({
     shadowRadius: 20,
     elevation: 16,
   },
-  scroll: { padding: 20, paddingBottom: 100 },
-  section: { marginBottom: 28 },
+  scroll: { padding: 20, paddingBottom: 60 },
+  section: { marginBottom: 25 },
   sectionLabel: { fontSize: 14, fontWeight: '800', color: '#1A1A2E', marginBottom: 12 },
   optional: { fontWeight: '500', color: '#9CA3AF' },
-  emptyHint: { fontSize: 14, color: '#9CA3AF', fontStyle: 'italic' },
-
-  selectCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 8,
-    borderWidth: 1.5, borderColor: '#E5E7EB',
-  },
-  selectCardActive: { borderColor: '#F56E0F', backgroundColor: '#FFF7ED' },
-  selectCardIcon: {
-    width: 40, height: 40, borderRadius: 10, backgroundColor: '#F9FAFB',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  selectCardTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
-  selectCardTitleActive: { color: '#F56E0F' },
-  selectCardSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
 
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: {
@@ -347,14 +260,7 @@ const styles = StyleSheet.create((theme) => ({
     padding: 14, fontSize: 14, color: '#1A1A2E', backgroundColor: '#FFFFFF',
   },
   textArea: { minHeight: 90, textAlignVertical: 'top' },
-
   errorText: { fontSize: 12, color: '#DC2626', fontWeight: '600', marginTop: 4 },
 
-  bookBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#F56E0F', borderRadius: 16, height: 58,
-    shadowColor: '#F56E0F', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
-  },
-  bookBtnDisabled: { opacity: 0.65 },
-  bookBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
+  actionBtn: { height: 58, borderRadius: 16, marginTop: 10 },
 }));

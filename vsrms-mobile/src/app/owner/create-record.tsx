@@ -20,18 +20,18 @@ function getVehicleLabel(a: Appointment): string {
 }
 
 function getVehicleId(a: Appointment): string {
-  if (typeof a.vehicleId === 'object') return a.vehicleId._id;
-  return a.vehicleId;
+  if (typeof a.vehicleId === 'object') return (a.vehicleId as any).id || (a.vehicleId as any)._id;
+  return a.vehicleId as string;
 }
 
 export default function OwnerCreateRecordScreen() {
   const { theme } = useUnistyles();
   const router = useRouter();
-  const params = useLocalSearchParams<{ appointmentId?: string }>();
+  const params = useLocalSearchParams<{ appointmentId?: string, workshopId?: string }>();
   const { user } = useAuth();
 
-  const workshopId = user?.workshopId;
-  const { data: inProgressAppts } = useWorkshopAppointments(workshopId, 'in_progress');
+  const targetWorkshopId = params.workshopId || user?.workshopId;
+  const { data: inProgressAppts } = useWorkshopAppointments(targetWorkshopId, 'in_progress');
 
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [showPicker, setShowPicker]     = useState(false);
@@ -47,7 +47,7 @@ export default function OwnerCreateRecordScreen() {
   // Handle pre-selected appointment if passed in params
   React.useEffect(() => {
     if (params.appointmentId && inProgressAppts) {
-      const found = inProgressAppts.find(a => a._id === params.appointmentId);
+      const found = inProgressAppts.find(a => (a._id || a.id) === params.appointmentId);
       if (found) setSelectedAppt(found);
     }
   }, [params.appointmentId, inProgressAppts]);
@@ -80,9 +80,6 @@ export default function OwnerCreateRecordScreen() {
       {/* ── DARK TOP SECTION ── */}
       <View style={styles.topSection}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name="close" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
           <View>
             <Text style={styles.headerSub}>Technical Logs</Text>
             <Text style={styles.headerTitle}>New Record</Text>
@@ -130,10 +127,10 @@ export default function OwnerCreateRecordScreen() {
                   {(inProgressAppts ?? []).length === 0 ? (
                     <Text style={styles.pickerEmpty}>No active jobs in progress</Text>
                   ) : (
-                    inProgressAppts?.map(a => (
+                    inProgressAppts?.map((a, idx) => (
                       <TouchableOpacity
-                        key={a._id}
-                        style={[styles.pickerItem, selectedAppt?._id === a._id && styles.pickerItemActive]}
+                        key={a._id || a.id || `appt-${idx}`}
+                        style={[styles.pickerItem, (selectedAppt?._id || selectedAppt?.id) === (a._id || a.id) && styles.pickerItemActive]}
                         onPress={() => { setSelectedAppt(a); setShowPicker(false); }}
                       >
                         <Text style={styles.pickerItemText}>{getVehicleLabel(a)}</Text>
@@ -233,15 +230,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: { 
     paddingHorizontal: theme.spacing.screenPadding, 
     paddingTop: 16, 
-    paddingBottom: theme.spacing.headerBottom, 
+    paddingBottom: 60, 
     position: 'relative', 
-    overflow: 'hidden' 
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 20, zIndex: 10, marginTop: 12 },
-  closeBtn: { 
-    width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', 
-    alignItems: 'center', justifyContent: 'center' 
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 20, zIndex: 10, marginTop: 12, marginBottom: 24 },
   headerSub: { 
     fontSize: theme.fonts.sizes.caption, 
     color: 'rgba(255,255,255,0.7)', 
@@ -257,8 +251,8 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: 4 
   },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: { 
     backgroundColor: '#FFFFFF', 

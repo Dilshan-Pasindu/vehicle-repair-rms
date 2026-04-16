@@ -4,7 +4,6 @@ import {
   ActivityIndicator, StatusBar, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { useAuth } from '@/hooks';
@@ -25,7 +24,6 @@ const ROLE_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export default function SettingsScreen() {
-  const router  = useRouter();
   const { user, signOut } = useAuth();
   const { mutate: update, isPending } = useUpdateMe();
 
@@ -44,7 +42,7 @@ export default function SettingsScreen() {
 
   const handleSave = () => {
     update(
-      { fullName: fullName.trim() || undefined, phone: (phone.trim() || undefined) as any },
+      { fullName: fullName.trim() || undefined, phone: (phone.trim() || undefined) as any } as any,
       { onSuccess: () => setEditing(false) },
     );
   };
@@ -63,9 +61,6 @@ export default function SettingsScreen() {
       {/* ── Dark top section ── */}
       <View style={styles.topSection}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerSub}>Account</Text>
             <Text style={styles.headerTitle}>Settings</Text>
@@ -222,12 +217,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: {
     paddingHorizontal: theme.spacing.screenPadding,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 60,
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: '#1A1A2E',
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24, marginTop: 12 },
   headerSub: { fontSize: theme.fonts.sizes.caption, color: 'rgba(255,255,255,0.7)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   headerTitle: { fontSize: theme.fonts.sizes.pageTitle, color: '#FFFFFF', fontWeight: '900', letterSpacing: -0.5, marginTop: 2 },
 
@@ -238,11 +233,11 @@ const styles = StyleSheet.create((theme) => ({
   roleBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 10 },
   roleText: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 0, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 100 },
 
-  mainCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: 16, flex: 1 },
-  scroll: { paddingHorizontal: theme.spacing.screenPadding, paddingTop: 28, paddingBottom: 60 },
+  mainCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: theme.spacing.cardOverlap, flex: 1, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 16 },
+  scroll: { paddingHorizontal: theme.spacing.screenPadding, paddingTop: 28, paddingBottom: 130 },
 
   section: { marginBottom: 28 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },

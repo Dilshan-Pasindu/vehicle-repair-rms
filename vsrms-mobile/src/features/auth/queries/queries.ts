@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { authKeys } from './auth.keys';
-import { getMe, listUsers, getWorkshopStaff } from '../api/auth.api';
+import { getMe, listUsers } from '../api/auth.api';
 
 export function useMe() {
   return useQuery({
@@ -18,10 +18,3 @@ export function useUsers(params?: Record<string, any>) {
   });
 }
 
-export function useWorkshopStaff(params?: Record<string, any>) {
-  return useQuery({
-    queryKey: [...authKeys.staff(), params],
-    queryFn:  () => getWorkshopStaff(params),
-    staleTime: 0,
-  });
-}

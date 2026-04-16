@@ -219,9 +219,9 @@ const WORKSHOPS = [
 // ─── Users ────────────────────────────────────────────────────────────────────
 const ADMIN = [
   {
-    asgardeoSub: 'seed-admin-001',
+    asgardeoSub: 'mock-admin',
     fullName: 'Nimal Silva',
-    email: 'admin@vsrms.lk',
+    email: 'admin@bypass.com',
     phone: '+94 77 000 0001',
     role: 'admin',
     active: true,
@@ -230,9 +230,9 @@ const ADMIN = [
 
 const OWNERS = [
   {
-    asgardeoSub: 'seed-owner-001',
+    asgardeoSub: 'mock-workshop_owner',
     fullName: 'Roshan Fernando',
-    email: 'roshan@autofix.lk',
+    email: 'workshop_owner@bypass.com',
     phone: '+94 77 100 0001',
     role: 'workshop_owner',
     active: true,
@@ -249,7 +249,7 @@ const OWNERS = [
 
 // wsIdx = which workshop (0 = AutoFix, 1 = Lanka Motors)
 const TECHNICIANS = [
-  { asgardeoSub: 'seed-tech-001', fullName: 'Kamal Silva',         email: 'kamal@autofix.lk',        phone: '+94 77 200 0001', role: 'workshop_staff', active: true, wsIdx: 0 },
+  { asgardeoSub: 'mock-workshop_staff', fullName: 'Kamal Silva',         email: 'workshop_staff@bypass.com', phone: '+94 77 200 0001', role: 'workshop_staff', active: true, wsIdx: 0 },
   { asgardeoSub: 'seed-tech-002', fullName: 'Nuwan Perera',        email: 'nuwan@autofix.lk',         phone: '+94 77 200 0002', role: 'workshop_staff', active: true, wsIdx: 0 },
   { asgardeoSub: 'seed-tech-003', fullName: 'Asanka Jayawardena',  email: 'asanka@autofix.lk',        phone: '+94 77 200 0003', role: 'workshop_staff', active: true, wsIdx: 0 },
   { asgardeoSub: 'seed-tech-004', fullName: 'Pradeep Kumara',      email: 'pradeep@lankamotors.lk',   phone: '+94 77 200 0004', role: 'workshop_staff', active: true, wsIdx: 1 },
@@ -258,7 +258,7 @@ const TECHNICIANS = [
 ];
 
 const CUSTOMERS = [
-  { asgardeoSub: 'seed-cust-001', fullName: 'Amara Jayawardena',    email: 'amara@gmail.com',    phone: '+94 77 111 2233', role: 'customer', active: true },
+  { asgardeoSub: 'mock-customer', fullName: 'Amara Jayawardena',    email: 'customer@bypass.com', phone: '+94 77 111 2233', role: 'customer', active: true },
   { asgardeoSub: 'seed-cust-002', fullName: 'Ishara Pathirana',     email: 'ishara@gmail.com',   phone: '+94 71 222 3344', role: 'customer', active: true },
   { asgardeoSub: 'seed-cust-003', fullName: 'Dinesh Samarasinghe',  email: 'dinesh@gmail.com',   phone: '+94 76 333 4455', role: 'customer', active: true },
   { asgardeoSub: 'seed-cust-004', fullName: 'Nalini Wickramaratne', email: 'nalini@gmail.com',   phone: '+94 78 444 5566', role: 'customer', active: true },
@@ -410,50 +410,72 @@ async function seed() {
   console.log(`  ✓ ${totalUsers} users  (admin: ${adminUsers.length} | owners: ${ownerUsers.length} | techs: ${techUsers.length} | customers: ${customerUsers.length})`);
 
   // ── 4. Back-fill workshop ownerId + technicians[] ─────────────────────────────
-  console.log('\n── Linking owners and technicians to first 2 workshops...');
-  for (let i = 0; i < ownerUsers.length; i++) {
-    const wsId   = workshops[i]._id;
-    const ownId  = ownerUsers[i]._id;
-    const techIds = techUsers.filter(t => TECHNICIANS[techUsers.indexOf(t)].wsIdx === i).map(t => t._id);
-    await Workshop.findByIdAndUpdate(wsId, {
-      ownerId:     ownId,
-      technicians: techIds,
+  console.log('\n── Linking ALL workshops and technicians to Mock Owner...');
+  const mockOwner = ownerUsers.find(u => u.asgardeoSub === 'mock-workshop_owner');
+  const allTechIds = techUsers.map(t => t._id);
+
+  for (const ws of workshops) {
+    await Workshop.findByIdAndUpdate(ws._id, {
+      ownerId:     mockOwner?._id || ownerUsers[0]._id,
+      technicians: allTechIds,
     });
   }
-  console.log('  ✓ Ownership and technician lists updated');
+  console.log('  ✓ Mock Owner now owns all workshops and manages all technicians');
 
-  // ── 5. Insert vehicles (2 per customer) ──────────────────────────────────────
-  console.log('\n── Inserting 20 vehicles...');
-  const primaryVehicles   = await Vehicle.insertMany(VEHICLES_PRIMARY.map((v, i)   => ({ ...v, ownerId: customerUsers[i]._id })));
-  const secondaryVehicles = await Vehicle.insertMany(VEHICLES_SECONDARY.map((v, i) => ({ ...v, ownerId: customerUsers[i]._id })));
-  console.log(`  ✓ ${primaryVehicles.length + secondaryVehicles.length} vehicles (2 per customer)`);
-
-  // ── 6. Insert appointments (1 per customer) ───────────────────────────────────
+  // ── 5. Insert vehicles (5 for mock-customer, 2 for others) ──────────────────
+  console.log('\n── Inserting vehicles (5 assigned to Mock Customer)...');
+  const mockCustomer = customerUsers.find(u => u.asgardeoSub === 'mock-customer');
+  
+  const primaryVehicles = await Vehicle.insertMany(VEHICLES_PRIMARY.map((v, i) => {
+    // Top 5 indices (across both lists) can go to mock customer
+    const ownerId = (i < 5) ? mockCustomer._id : customerUsers[i % customerUsers.length]._id;
+    return { ...v, ownerId };
+  }));
+  
+  const secondaryVehicles = await Vehicle.insertMany(VEHICLES_SECONDARY.map((v, i) => {
+    // Distribute remaining
+    const ownerId = customerUsers[i % customerUsers.length]._id;
+    return { ...v, ownerId };
+  }));
+  console.log(`  ✓ ${primaryVehicles.length + secondaryVehicles.length} vehicles seeded`);
   console.log('\n── Inserting 10 appointments...');
+  // ── 6. Insert appointments ───────────────────────────────────────────────────
+  console.log('\n── Inserting 10 appointments...');
+  const mockTech = techUsers.find(t => t.asgardeoSub === 'mock-workshop_staff');
+
   const appointments = await Appointment.insertMany(
     APPOINTMENTS.map((a, i) => {
       const { wsIdx, techIdx, ...rest } = a;
+      // Ensure mock customer has some appointments
+      const userId = (i < 3) ? mockCustomer._id : customerUsers[i % customerUsers.length]._id;
+      // Ensure mock tech has some tasks
+      const technicianId = (i % 2 === 0) ? mockTech._id : techUsers[techIdx % techUsers.length]._id;
+
       return {
         ...rest,
-        userId:     customerUsers[i]._id,
+        userId,
         vehicleId:  primaryVehicles[i]._id,
-        workshopId: workshops[wsIdx]._id,
+        workshopId: workshops[wsIdx % workshops.length]._id,
+        technicianId,
       };
     })
   );
-  console.log(`  ✓ ${appointments.length} appointments  (in_progress: 5 | confirmed: 2 | pending: 3)`);
+  console.log(`  ✓ ${appointments.length} appointments (Mock Tech assigned to several)`);
 
   // ── 7. Insert service records (for in_progress appointments only) ─────────────
   console.log('\n── Inserting 5 service records...');
   const records = await ServiceRecord.insertMany(
     RECORDS.map((r, i) => {
-      const { techIdx, ...rest } = r;
+      const appt = appointments[i];
+      const tech = techUsers.find(t => t._id.equals(appt.technicianId));
+      
       return {
-        ...rest,
-        appointmentId:  appointments[i]._id,
-        vehicleId:      primaryVehicles[i]._id,
-        serviceDate:    appointments[i].scheduledDate,
-        technicianName: techUsers[techIdx].fullName,
+        ...r,
+        appointmentId:  appt._id,
+        vehicleId:      appt.vehicleId,
+        serviceDate:    appt.scheduledDate,
+        technicianName: tech ? tech.fullName : 'Kamal Silva',
+        workshopId:     appt.workshopId,
       };
     })
   );
@@ -502,13 +524,11 @@ async function seed() {
   console.log(`  Service Records: ${records.length}`);
   console.log(`  Reviews:         ${reviews.length}`);
   console.log('════════════════════════════════════════════════');
-  console.log('\nTest accounts (configure Asgardeo passwords separately):');
-  console.log('  Admin     →  admin@vsrms.lk');
-  console.log('  Owner 1   →  roshan@autofix.lk      (AutoFix Pro Colombo)');
-  console.log('  Owner 2   →  thilak@lankamotors.lk  (Lanka Motors Kandy)');
-  console.log('  Tech 1    →  kamal@autofix.lk        (AutoFix, 3 techs total)');
-  console.log('  Tech 4    →  pradeep@lankamotors.lk  (Lanka Motors, 3 techs total)');
-  console.log('  Customer  →  amara@gmail.com');
+  console.log('\nTest accounts (Use "Development Bypass" on Login screen):');
+  console.log('  Admin     →  admin@bypass.com');
+  console.log('  Owner     →  workshop_owner@bypass.com  (Owns ALL 20 workshops)');
+  console.log('  Tech      →  workshop_staff@bypass.com  (Assigned to owner workshops)');
+  console.log('  Customer  →  customer@bypass.com        (Has 5 vehicles)');
   console.log('\nVehicles currently in_progress:');
   APPOINTMENTS.filter(a => a.status === 'in_progress').forEach((a, i) => {
     const v = VEHICLES_PRIMARY[i];

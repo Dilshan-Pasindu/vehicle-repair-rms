@@ -93,6 +93,27 @@ export default function AdminGaragesScreen() {
     );
   };
 
+  const list = (
+    <FlashList<Workshop>
+      data={workshops || []}
+      keyExtractor={item => item._id || item.id || ''}
+      renderItem={({ item }) => (
+        <WorkshopCard
+          workshop={item}
+          onDeactivate={() => handleDeactivate(item)}
+        />
+      )}
+      // @ts-ignore
+      estimatedItemSize={150}
+      onRefresh={refetch}
+      refreshing={isLoading}
+      contentContainerStyle={styles.list}
+      ListEmptyComponent={
+        <EmptyState message="No workshops in the system yet. Owners create their own workshops from the Garages tab." />
+      }
+    />
+  );
+
   return (
     <ScreenWrapper bg="#1A1A2E">
       <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
@@ -126,25 +147,7 @@ export default function AdminGaragesScreen() {
           </View>
         ) : isError ? (
           <ErrorScreen onRetry={refetch} variant="inline" />
-        ) : (
-          <FlashList<Workshop>
-            data={workshops || []}
-            keyExtractor={item => item._id || item.id || ''}
-            renderItem={({ item }) => (
-              <WorkshopCard
-                workshop={item}
-                onDeactivate={() => handleDeactivate(item)}
-              />
-            )}
-            estimatedItemSize={150}
-            onRefresh={refetch}
-            refreshing={isLoading}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={
-              <EmptyState message="No workshops in the system yet. Owners create their own workshops from the Garages tab." />
-            }
-          />
-        )}
+        ) : list}
       </View>
     </ScreenWrapper>
   );
@@ -154,19 +157,20 @@ const styles = StyleSheet.create((theme) => ({
   topSection: {
     paddingHorizontal: theme.spacing.screenPadding,
     paddingTop: 16,
-    paddingBottom: theme.spacing.headerBottom,
+    paddingBottom: 60,
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, marginBottom: 24, marginTop: 12 },
   headerSub: { fontSize: theme.fonts.sizes.caption, color: 'rgba(255,255,255,0.7)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   headerTitle: { fontSize: theme.fonts.sizes.pageTitle, color: '#FFFFFF', fontWeight: '900', letterSpacing: -0.5, marginTop: 4 },
 
   infoNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10, zIndex: 10 },
   infoNoticeText: { flex: 1, fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '500', lineHeight: 16 },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: theme.spacing.cardOverlap, flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },

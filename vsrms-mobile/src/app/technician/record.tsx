@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { useAuth } from '@/hooks';
@@ -20,8 +20,8 @@ function getVehicleLabel(a: Appointment): string {
 }
 
 function getVehicleId(a: Appointment): string {
-  if (typeof a.vehicleId === 'object') return a.vehicleId._id;
-  return a.vehicleId;
+  if (typeof a.vehicleId === 'object') return (a.vehicleId as any).id || (a.vehicleId as any)._id;
+  return a.vehicleId as string;
 }
 
 export default function StaffRecordScreen() {
@@ -32,8 +32,21 @@ export default function StaffRecordScreen() {
   const workshopId = user?.workshopId;
   const { data: inProgressAppts } = useWorkshopAppointments(workshopId, 'in_progress');
 
+  const { appointmentId } = useLocalSearchParams<{ appointmentId: string }>();
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [showPicker, setShowPicker]     = useState(false);
+  
+  // Auto-select if appointmentId is passed
+  React.useEffect(() => {
+    if (appointmentId && inProgressAppts) {
+      const found = inProgressAppts.find(a => (a._id || a.id) === appointmentId);
+      if (found) {
+        setSelectedAppt(found as any);
+        setWorkDone(found.serviceType); // Auto-fill work description
+      }
+    }
+  }, [appointmentId, inProgressAppts]);
+
   const [workDone, setWorkDone]         = useState('');
   const [mileage, setMileage]           = useState('');
   const [totalCost, setTotalCost]       = useState('');
@@ -71,9 +84,6 @@ export default function StaffRecordScreen() {
       {/* ── DARK TOP SECTION ── */}
       <View style={styles.topSection}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
           <View>
             <Text style={styles.headerSub}>Operations Log</Text>
             <Text style={styles.headerTitle}>Add Record</Text>
@@ -121,9 +131,9 @@ export default function StaffRecordScreen() {
                   {(inProgressAppts ?? []).length === 0 ? (
                     <Text style={styles.pickerEmpty}>No in-progress jobs found</Text>
                   ) : (
-                    inProgressAppts?.map(a => (
+                    inProgressAppts?.map((a, idx) => (
                       <TouchableOpacity
-                        key={a._id}
+                        key={a._id || a.id || `appt-${idx}`}
                         style={[styles.pickerItem, selectedAppt?._id === a._id && styles.pickerItemActive]}
                         onPress={() => { setSelectedAppt(a); setShowPicker(false); }}
                       >
@@ -221,15 +231,12 @@ const styles = StyleSheet.create((theme) => ({
   topSection: { 
     paddingHorizontal: theme.spacing.screenPadding, 
     paddingTop: 16, 
-    paddingBottom: theme.spacing.headerBottom, 
+    paddingBottom: 60, 
     position: 'relative', 
-    overflow: 'hidden' 
+    overflow: 'hidden',
+    backgroundColor: '#1A1A2E'
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 20, zIndex: 10, marginTop: 12 },
-  backBtn: { 
-    width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', 
-    alignItems: 'center', justifyContent: 'center' 
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 20, zIndex: 10, marginTop: 12, marginBottom: 24 },
   headerSub: { 
     fontSize: theme.fonts.sizes.caption, 
     color: 'rgba(255,255,255,0.7)', 
@@ -245,8 +252,8 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: 4 
   },
 
-  decCircle1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(245,110,15,0.13)', top: -25, right: -25 },
-  decCircle2: { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(245,110,15,0.08)', bottom: 10, right: 90 },
+  decCircle1: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(245,110,15,0.12)', top: -30, right: -20 },
+  decCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(245,110,15,0.06)', bottom: 10, right: 90 },
 
   mainCard: { 
     backgroundColor: '#FFFFFF', 

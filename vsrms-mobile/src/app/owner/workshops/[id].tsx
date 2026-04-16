@@ -10,11 +10,12 @@ import { StyleSheet } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { useWorkshop, useWorkshopTechnicians } from '@/features/workshops/queries/queries';
-import { useAddTechnician, useRemoveTechnician, useUpdateWorkshop, useUploadWorkshopImage } from '@/features/workshops/queries/mutations';
+import { useRemoveTechnician, useUpdateWorkshop, useUploadWorkshopImage } from '@/features/workshops/queries/mutations';
+import { useRegisterStaff } from '@/features/auth/queries/mutations';
 import { useWorkshopAppointments } from '@/features/appointments/queries/queries';
 import { User } from '@/features/auth/types/auth.types';
 
-const EMPTY_TECH = { firstName: '', lastName: '', email: '', phone: '' };
+const EMPTY_TECH = { firstName: '', lastName: '', email: '', phone: '', password: '' };
 
 // ── Technician card ───────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ export default function WorkshopManageScreen() {
   const { data: confirmed }  = useWorkshopAppointments(id, 'confirmed');
   const { data: inProgress } = useWorkshopAppointments(id, 'in_progress');
 
-  const { mutate: addTech,      isPending: addPending }    = useAddTechnician(id!);
+  const { mutate: registerTech, isPending: addPending } = useRegisterStaff();
   const { mutate: removeTech,   isPending: removePending } = useRemoveTechnician(id!);
   const { mutate: updateWS,     isPending: updatePending } = useUpdateWorkshop(id!);
   const { mutate: uploadImage,  isPending: uploadPending } = useUploadWorkshopImage(id!);
@@ -78,6 +79,7 @@ export default function WorkshopManageScreen() {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [techForm, setTechForm]               = useState(EMPTY_TECH);
   const [techFormError, setTechFormError]     = useState('');
+  const [showPassword, setShowPassword]       = useState(false);
 
   // Edit workshop modal
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -117,15 +119,30 @@ export default function WorkshopManageScreen() {
 
   const handleAddTech = () => {
     setTechFormError('');
-    if (!techForm.firstName || !techForm.lastName || !techForm.email) {
-      setTechFormError('First name, last name, and email are required.');
+    if (!techForm.firstName || !techForm.lastName || !techForm.email || !techForm.password) {
+      setTechFormError('First name, last name, email and password are required.');
       return;
     }
-    addTech(
-      { firstName: techForm.firstName, lastName: techForm.lastName, email: techForm.email, phone: techForm.phone || undefined },
+    if (techForm.password.length < 8) {
+      setTechFormError('Password must be at least 8 characters.');
+      return;
+    }
+    if (!id) {
+      setTechFormError('Workshop ID missing.');
+      return;
+    }
+    registerTech(
       {
-        onSuccess: () => { setAddModalVisible(false); setTechForm(EMPTY_TECH); },
-        onError: (e: any) => setTechFormError(e?.message ?? 'Failed to add technician'),
+        firstName: techForm.firstName,
+        lastName: techForm.lastName,
+        email: techForm.email,
+        password: techForm.password,
+        workshopId: id,
+        phone: techForm.phone || undefined,
+      },
+      {
+        onSuccess: () => { setAddModalVisible(false); setTechForm(EMPTY_TECH); setShowPassword(false); },
+        onError: (e: any) => setTechFormError(e?.response?.data?.message ?? e?.message ?? 'Failed to register technician'),
       },
     );
   };
@@ -231,21 +248,21 @@ export default function WorkshopManageScreen() {
           <View style={styles.actionsRow}>
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => router.push('/owner/bookings' as any)}
+              onPress={() => router.push({ pathname: '/owner/bookings', params: { workshopId: workshop._id || workshop.id } } as any)}
             >
               <Ionicons name="calendar-outline" size={20} color="#2563EB" />
               <Text style={styles.actionBtnText}>Bookings</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => router.push('/owner/jobs' as any)}
+              onPress={() => router.push({ pathname: '/owner/jobs', params: { workshopId: workshop._id || workshop.id } } as any)}
             >
               <Ionicons name="hammer-outline" size={20} color="#F56E0F" />
               <Text style={styles.actionBtnText}>Active Jobs</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => router.push('/owner/logs' as any)}
+              onPress={() => router.push({ pathname: '/owner/logs', params: { workshopId: workshop._id || workshop.id } } as any)}
             >
               <Ionicons name="document-text-outline" size={20} color="#6B7280" />
               <Text style={styles.actionBtnText}>Records</Text>
@@ -328,10 +345,35 @@ export default function WorkshopManageScreen() {
                 <TextInput style={styles.input} placeholder="+94 77 123 4567" keyboardType="phone-pad" value={techForm.phone} onChangeText={t => setTechForm(f => ({ ...f, phone: t }))} />
               </View>
 
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password *</Text>
+                <View style={styles.passwordRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Min. 8 characters"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    value={techForm.password}
+                    onChangeText={t => setTechForm(f => ({ ...f, password: t }))}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeBtn}
+                    onPress={() => setShowPassword(v => !v)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               <View style={styles.infoBox}>
                 <Ionicons name="information-circle-outline" size={16} color="#2563EB" />
                 <Text style={styles.infoText}>
-                  The technician registers in the app with this email to activate their account. They will be automatically linked to this workshop.
+                  The technician can log in immediately with this email and password — no additional registration required. They'll be automatically linked to {workshop.name}.
                 </Text>
               </View>
 
@@ -485,4 +527,7 @@ const styles = StyleSheet.create((theme) => ({
   errorText: { flex: 1, fontSize: 13, color: '#DC2626', fontWeight: '700' },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F56E0F', borderRadius: 14, height: 54, marginBottom: 12, shadowColor: '#F56E0F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6 },
   saveBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+
+  passwordRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  eyeBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
 }));

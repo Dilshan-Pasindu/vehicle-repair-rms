@@ -1,7 +1,7 @@
 # plan.md — VSRMS Implementation Plan
 
 > Living document. Update status as work progresses.
-> Current date: 2026-04-13
+> Current date: 2026-04-16
 
 ---
 
@@ -24,7 +24,7 @@ All 6 controllers and routes are implemented. Core middleware is in place.
 | models/Appointment.js | ✓ Done | isValidTransition static method |
 | models/ServiceRecord.js | ✓ Done | |
 | models/Review.js | ✓ Done | |
-| controllers/auth.controller.js | ✓ Done | ROPC proxy, SCIM2 register, sync-profile with upsert |
+| controllers/auth.controller.js | ✓ Done | ROPC proxy, SCIM2 register, sync-profile with upsert; **registerStaff** now creates full Asgardeo account (password required) |
 | controllers/vehicle.controller.js | ✓ Done | Full CRUD + image upload + soft delete |
 | controllers/workshop.controller.js | ✓ Done | Full CRUD + nearby ($geoNear) + image upload |
 | controllers/appointment.controller.js | ✓ Done | Fixed status filter extraction bug (B1); supports comma-separated status values |
@@ -48,6 +48,7 @@ Dashboards standardized to premium Dark Header/White Card theme.
 | app/_layout.tsx | ✓ Done | Role-based routing |
 | features/auth/screens/LoginScreen.tsx | ✓ Done | Fixed handleSignIn flow (B2) |
 | features/auth/screens/RegisterScreen.tsx | ✓ Done | Standardized to premium UI |
+| features/auth/screens/SettingsScreen.tsx | ✓ Done | **Premium UI overhaul** — dark header (paddingBottom: 60), overlapping white card, ambient circles, no back button, profile edit in card |
 | features/vehicles/screens/* | ✓ Done | List, Add, Edit, Detail |
 | features/workshops/screens/WorkshopDetailScreen | ✓ Done | Fixed specialization/description (B4, B5); Write Review modal added |
 | features/workshops/screens/WorkshopListScreen | ✓ Done | District filter chips (25 Sri Lanka districts, `?district=` to backend) |
@@ -57,9 +58,9 @@ Dashboards standardized to premium Dark Header/White Card theme.
 | features/reviews/screens/ReviewListScreen | ✓ Done | |
 | app/customer/schedule/ | ✓ Done | Book screen route implementation |
 | app/customer/workshops/ | ✓ Done | Book from workshop detail implementation |
-| app/technician/* | ✓ Done | Premium Dashboard + Appointments |
-| app/owner/* | ✓ Done | Premium Dashboard + Jobs + Workshop Management + Staff; image upload added to manage screen |
-| app/admin/* | ✓ Done | Premium Dashboard + Garages (FIXED B8) |
+| app/technician/* | ✓ Done | Premium Dashboard + Appointments; **AppointmentCard extended** with `isTechnician`/`onFinalize` props for tracker |
+| app/owner/* | ✓ Done | Premium Dashboard + Jobs + Workshop Management + Staff (**password field added** to technician registration); image upload |
+| app/admin/* | ✓ Done | Premium Dashboard + Garages + Users (FlashList TS errors fixed with pre-rendered variable pattern) |
 
 ---
 
