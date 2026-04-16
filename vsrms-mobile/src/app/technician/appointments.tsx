@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StatusBar, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-unistyles';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { useAuth } from '@/hooks';
 import { useWorkshopAppointments } from '@/features/appointments/queries/queries';
 import { useUpdateAppointmentStatus } from '@/features/appointments/queries/mutations';
 import { Appointment } from '@/features/appointments/types/appointments.types';
+import { AppointmentCard } from '@/features/appointments/components/AppointmentCard';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -48,14 +49,57 @@ function ApptCard({
 }
 
 export default function TechnicianAppointmentsScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const [status, setStatus] = useState<'pending' | 'confirmed' | 'completed'>('pending');
 
   const { data, isLoading, isError, refetch } = useWorkshopAppointments(user?.workshopId, status);
   const { mutate: updateStatus } = useUpdateAppointmentStatus();
 
+  // Deduplicate by id — guards against backend returning same appointment twice
+  const appointments = React.useMemo(() => {
+    const seen = new Set<string>();
+    return (data ?? []).filter(a => {
+      const key = (a as any).id || (a as any)._id;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [data]);
+
+  // Smart Switching logic
+  React.useEffect(() => {
+    if (!initialStatus && !pLoad && !cLoad && !iLoadCount) {
+      if ((pData?.length ?? 0) === 0) {
+        if ((iData?.length ?? 0) > 0) {
+          setStatus('in_progress');
+        } else if ((cData?.length ?? 0) > 0) {
+          setStatus('confirmed');
+        }
+      }
+    }
+  }, [pLoad, cLoad, iLoadCount, pData, cData, iData, initialStatus]);
+
+  // Handle incoming status from params
+  React.useEffect(() => {
+    if (initialStatus) {
+      setStatus(initialStatus);
+    }
+  }, [initialStatus]);
+
   const handleAccept = (id: string) => {
     updateStatus({ id, status: 'confirmed' });
+  };
+
+  const handleStart = (id: string) => {
+    updateStatus({ id, status: 'in_progress' });
+  };
+
+  const handleFinalize = (id: string) => {
+    router.push({ 
+      pathname: '/technician/record', 
+      params: { appointmentId: id } 
+    } as any);
   };
 
   return (
@@ -139,7 +183,8 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: 4
   },
 
-  tabContainer: { flexDirection: 'row', gap: 20, zIndex: 10 },
+  tabScroll: { zIndex: 10 },
+  tabContainer: { flexDirection: 'row', gap: 24 },
   tab: { paddingVertical: 8, position: 'relative' },
   activeTab: {},
   tabText: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
@@ -167,16 +212,4 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: 24,
     paddingBottom: 130
   },
-
-  card: { backgroundColor: '#FFFFFF', borderRadius: 22, marginBottom: 16, borderWidth: 1.5, borderColor: '#F3F4F6', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 2 },
-  cardBody: { padding: 18 },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  pillText: { fontSize: 9, fontWeight: '800' },
-  dateText: { fontSize: 12, fontWeight: '700', color: '#9CA3AF' },
-  serviceTitle: { fontSize: 17, fontWeight: '900', color: '#1A1A2E', letterSpacing: -0.3 },
-  ownerText: { fontSize: 13, color: '#6B7280', fontWeight: '600', marginTop: 4 },
-
-  acceptBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F56E0F', paddingVertical: 14 },
-  acceptText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14, textTransform: 'uppercase' },
 }));

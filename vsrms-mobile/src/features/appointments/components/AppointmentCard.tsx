@@ -105,13 +105,18 @@ const styles = StyleSheet.create(() => ({
     elevation: 2,
   },
   cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
   },
   dateBox: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  dateText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  wsHeaderBox: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  wsHeaderText: { fontSize: 13, fontWeight: '800', color: '#1A1A2E', textTransform: 'uppercase', letterSpacing: 0.2 },
+  
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
+  dateText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+  
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12,
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
@@ -126,4 +131,49 @@ const styles = StyleSheet.create(() => ({
     marginTop: 10, backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10,
   },
   notesText: { flex: 1, fontSize: 12, color: '#6B7280', fontStyle: 'italic', lineHeight: 18 },
+
+  workshopTag: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6, 
+    backgroundColor: '#FFF7ED', 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 6, 
+    marginBottom: 8, 
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#FFEDD5'
+  },
+  workshopTagText: { 
+    fontSize: 10, 
+    fontWeight: '800', 
+    color: '#EA580C', 
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 14,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F56E0F',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 }));
