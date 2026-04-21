@@ -4,6 +4,9 @@ FROM node:20-alpine
 # Set the working directory inside the container
 WORKDIR /usr/src/app
 
+# Set production environment so rate-limits and error handling use production defaults
+ENV NODE_ENV=production
+
 # Copy package.json and package-lock.json first to leverage Docker layer caching
 COPY package*.json ./
 
