@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ActivityIndicator,
-  Alert, ScrollView, KeyboardAvoidingView, Platform, StatusBar, Image,
+  Alert, ScrollView, KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native-unistyles';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { useCreateVehicle, useUploadVehicleImage } from '../queries/mutations';
@@ -192,16 +193,17 @@ export default function AddVehicleScreen() {
                   <Image
                     source={{ uri: imageUri }}
                     style={styles.photoPreview}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    transition={300}
                   />
                 ) : (
                   /* ── Placeholder: no image chosen yet ── */
                   <View style={styles.photoPlaceholder}>
                     <View style={styles.cameraIconCircle}>
-                      <Ionicons name="camera-outline" size={32} color="#F56E0F" />
+                      <Ionicons name="image-outline" size={32} color="#818CF8" />
                     </View>
                     <Text style={styles.photoPlaceholderText}>Tap to add a photo</Text>
-                    <Text style={styles.photoPlaceholderSub}>JPEG or PNG · max 5 MB</Text>
+                    <Text style={styles.photoPlaceholderSub}>JPEG, PNG or HEIC · max 5 MB</Text>
                   </View>
                 )}
 
@@ -329,7 +331,7 @@ const fieldStyles = StyleSheet.create(() => ({
   group: { marginBottom: 20 },
   label: { fontSize: 11, fontWeight: '800', color: '#6B7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   optional: { fontWeight: '600', color: '#D1D5DB', textTransform: 'none' },
-  input: { borderWidth: 1.5, borderColor: '#F3F4F6', borderRadius: 14, paddingHorizontal: 16, height: 52, fontSize: 15, color: '#1A1A2E', backgroundColor: '#FAFAFA', fontWeight: '500' },
+  input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, paddingHorizontal: 16, height: 52, fontSize: 15, color: '#1A1A2E', backgroundColor: '#F8FAFC', fontWeight: '500', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4, elevation: 1 },
   inputError: { borderColor: '#FECACA', backgroundColor: '#FEF2F2' },
   errorText: { fontSize: 11, color: '#DC2626', fontWeight: '700', marginTop: 4, marginLeft: 4 },
 }));
@@ -352,34 +354,32 @@ const styles = StyleSheet.create(() => ({
 
 
   photoPicker: {
-    height: 160,
-    borderRadius: 18,
+    height: 180,
+    borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#F3F4F6',
+    borderColor: '#CBD5E1',
     borderStyle: 'dashed',
     marginBottom: 12,
+    backgroundColor: '#F8FAFC',
   },
   photoPreview: { width: '100%', height: '100%' },
   photoPlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#FAFAFA',
+    gap: 12,
   },
   cameraIconCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(245,110,15,0.2)',
   },
-  photoPlaceholderText: { fontSize: 14, fontWeight: '700', color: '#374151' },
-  photoPlaceholderSub: { fontSize: 11, fontWeight: '500', color: '#9CA3AF' },
+  photoPlaceholderText: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
+  photoPlaceholderSub: { fontSize: 12, fontWeight: '600', color: '#64748B' },
   changeOverlay: {
     position: 'absolute',
     bottom: 0,
