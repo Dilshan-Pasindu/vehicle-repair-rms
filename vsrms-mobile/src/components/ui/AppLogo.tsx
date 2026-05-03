@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, Image } from 'react-native';
 
 interface AppLogoProps {
   size?: number;
@@ -7,12 +7,13 @@ interface AppLogoProps {
   variant?: 'dark' | 'light';
 }
 
-const Logo = require('../../../assets/logo.svg');
-
-export function AppLogo({ size = 48, showText = false, variant = 'dark' }: AppLogoProps) {
+export function AppLogo({ size = 120, showText = false, variant = 'dark' }: AppLogoProps) {
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
-      <Logo width={size} height={size} />
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <Image
+        source={require('../../../assets/logo.svg')}
+        style={{ width: size, height: size, resizeMode: 'contain' }}
+      />
     </View>
   );
 }
