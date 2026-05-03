@@ -192,10 +192,7 @@ const getWorkshopAppointments = async (req, res, next) => {
         throw new AppError('Workshop ID is required', 400);
       }
       
-      const isBypass = process.env.NODE_ENV !== 'production' && req.user.email === 'customer@bypass.com';
-      const wsFilter = isBypass
-        ? { $or: [{ ownerId: req.user._id }, { ownerId: null }, { ownerId: { $exists: false } }] }
-        : { ownerId: req.user._id };
+      const wsFilter = { ownerId: req.user._id };
       
       const myWorkshops = await Workshop.find(wsFilter).select('_id');
       filter.workshopId = { $in: myWorkshops.map(w => w._id) };

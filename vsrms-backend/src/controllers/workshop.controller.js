@@ -94,11 +94,7 @@ const getMyWorkshops = async (req, res, next) => {
   try {
     const { page, limit, skip } = paginate(req.query);
     
-    // In development, bypass account can see orphaned workshops from testing
-    const isBypass = process.env.NODE_ENV !== 'production' && req.user.email === 'customer@bypass.com';
-    const filter = isBypass
-      ? { $or: [{ ownerId: req.user._id }, { ownerId: null }, { ownerId: { $exists: false } }] }
-      : { ownerId: req.user._id };
+    const filter = { ownerId: req.user._id };
 
     const [data, total] = await Promise.all([
       Workshop.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
