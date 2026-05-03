@@ -4,7 +4,7 @@
 
 const Vehicle = require('../models/Vehicle');
 const { AppError } = require('../middleware/errorHandler');
-const { uploadToR2 } = require('../utils/r2.util');
+const { uploadToR2, deleteFromR2 } = require('../utils/r2.util');
 
 
 const paginate = (query) => {
@@ -126,6 +126,19 @@ const uploadVehicleImage = async (req, res, next) => {
     // Security check: only the owner can upload a photo for their vehicle.
     if (vehicle.ownerId.toString() !== req.user._id.toString()) {
       throw new AppError('Forbidden — you do not own this vehicle', 403);
+    }
+
+    // Clean up old image if it exists
+    if (vehicle.imageUrl) {
+      try {
+        const oldKey = vehicle.imageUrl.split('/').slice(3).join('/'); // Extracts path after domain
+        if (oldKey) {
+          await deleteFromR2(oldKey);
+        }
+      } catch (cleanupErr) {
+        console.error('[Vehicle Image] Failed to delete old image from R2:', cleanupErr);
+        // Continue uploading new image even if cleanup fails
+      }
     }
 
     // Build a unique file path (key) inside the R2 bucket

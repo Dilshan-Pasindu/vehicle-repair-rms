@@ -1,7 +1,5 @@
 'use strict';
 
-
-
 const multer = require('multer');
 const { AppError } = require('./errorHandler');
 
@@ -9,21 +7,16 @@ const { AppError } = require('./errorHandler');
 
 const storage = multer.memoryStorage();
 
-//  File filter: only allow JPEG and PNG 
-
-
+//  File filter: only allow JPEG and PNG, HEIC, HEIF 
 const fileFilter = (_req, file, cb) => {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
   if (!allowed.includes(file.mimetype)) {
 
-    return cb(new AppError(`Invalid file type "${file.mimetype}". Only JPEG, PNG and WebP are allowed.`, 400));
+    return cb(new AppError(`Invalid file type "${file.mimetype}". Only JPEG, PNG, WebP, and HEIC are allowed.`, 400));
   }
-
-
   cb(null, true);
 };
-
 
 const upload = multer({
   storage,

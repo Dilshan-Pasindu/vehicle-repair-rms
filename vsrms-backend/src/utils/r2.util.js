@@ -1,8 +1,6 @@
 'use strict';
 
-
-
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { r2Client, R2_BUCKET, R2_PUBLIC_URL } = require('../config/r2');
 
 /**
@@ -39,4 +37,16 @@ async function uploadToR2({ buffer, mimeType, key }) {
   return `${R2_PUBLIC_URL}/${key}`;
 }
 
-module.exports = { uploadToR2 };
+/**
+ * Deletes an object from Cloudflare R2
+ * @param {string} key - Storage path inside the bucket
+ */
+async function deleteFromR2(key) {
+  const command = new DeleteObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+  });
+  await r2Client.send(command);
+}
+
+module.exports = { uploadToR2, deleteFromR2 };
