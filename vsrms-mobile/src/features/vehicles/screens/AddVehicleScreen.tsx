@@ -17,7 +17,11 @@ const VEHICLE_TYPES = [
   { value: 'car', label: 'Car', icon: 'car-outline' },
   { value: 'motorcycle', label: 'Motorcycle', icon: 'bicycle-outline' },
   { value: 'tuk', label: 'Tuk Tuk', icon: 'car-outline' },
-  { value: 'van', label: 'Van / SUV', icon: 'bus-outline' },
+  { value: 'van', label: 'Van', icon: 'bus-outline' },
+  { value: 'suv', label: 'SUV', icon: 'car-sport-outline' },
+  { value: 'truck', label: 'Truck', icon: 'car-outline' },
+  { value: 'bus', label: 'Bus', icon: 'bus-outline' },
+  { value: 'other', label: 'Other', icon: 'construct-outline' },
 ] as const;
 
 export type VehicleType = (typeof VEHICLE_TYPES)[number]['value'];
@@ -129,6 +133,9 @@ export default function AddVehicleScreen() {
                 setIsUploading(false);
                 setUploadPercent(0);
                 router.back();
+              },
+              onError: (err) => {
+                Alert.alert('Image Upload Failed', handleApiError(err));
               },
             },
           );

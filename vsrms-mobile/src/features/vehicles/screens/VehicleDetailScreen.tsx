@@ -11,12 +11,17 @@ import { useUploadVehicleImage } from '../queries/mutations';
 import { useVehicleRecords } from '@/features/records/queries/queries';
 import { ServiceRecord } from '@/features/records/types/records.types';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
+import { handleApiError } from '@/services/error.handler';
 
 const TYPE_ICON: Record<string, string> = {
   car: 'car-outline',
   motorcycle: 'bicycle-outline',
   tuk: 'car-outline',
   van: 'bus-outline',
+  suv: 'car-sport-outline',
+  truck: 'car-outline',
+  bus: 'bus-outline',
+  other: 'construct-outline',
 };
 
 export function VehicleDetailScreen({ id }: { id: string }) {
@@ -58,7 +63,12 @@ export function VehicleDetailScreen({ id }: { id: string }) {
 
         onProgress: setUploadPercent,
       },
-      { onSettled: () => { setUploading(false); setUploadPercent(0); } },
+      {
+        onSettled: () => { setUploading(false); setUploadPercent(0); },
+        onError: (err) => {
+          Alert.alert('Image Upload Failed', handleApiError(err));
+        },
+      },
     );
   }
 

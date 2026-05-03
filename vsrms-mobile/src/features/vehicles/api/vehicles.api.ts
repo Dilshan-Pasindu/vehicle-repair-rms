@@ -49,9 +49,10 @@ export const uploadVehicleImage = async (
   // Determine MIME type from the file extension
 
   const match = /\.(\w+)$/.exec(filename);
-  const mimeType = match
-    ? `image/${match[1].toLowerCase().replace('jpg', 'jpeg')}`
-    : 'image/jpeg';
+  let ext = match ? match[1].toLowerCase() : 'jpeg';
+  if (ext === 'jpg') ext = 'jpeg';
+  
+  const mimeType = `image/${ext}`;
 
   // Append the file. React Native's FormData accepts { uri, type, name }.
 
