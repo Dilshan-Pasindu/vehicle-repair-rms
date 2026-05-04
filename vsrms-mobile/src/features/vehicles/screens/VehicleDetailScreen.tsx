@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useVehicle } from '../queries/queries';
-import { useUploadVehicleImage } from '../queries/mutations';
+import { useUploadVehicleImage, useDeleteVehicle } from '../queries/mutations';
 import { useVehicleRecords } from '@/features/records/queries/queries';
 import { ServiceRecord } from '@/features/records/types/records.types';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
@@ -37,6 +37,7 @@ export function VehicleDetailScreen({ id }: { id: string }) {
   // useVehicleRecords returns a paginated envelope {data, total, ...} — unwrap the array
   const records: ServiceRecord[] = (recordsData as any)?.data ?? (Array.isArray(recordsData) ? recordsData : []);
   const uploadImage = useUploadVehicleImage();
+  const deleteVehicle = useDeleteVehicle();
 
   const iconName = vehicle?.vehicleType ? (TYPE_ICON[vehicle.vehicleType] ?? 'car-outline') : 'car-outline';
 
@@ -74,6 +75,25 @@ export function VehicleDetailScreen({ id }: { id: string }) {
           Alert.alert('Image Upload Failed', handleApiError(err));
         },
       },
+    );
+  }
+
+  async function handleDelete() {
+    Alert.alert(
+      'Confirm Deletion',
+      'Are you sure you want to delete this vehicle? This will also remove its service history from your view.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Confirm', 
+          style: 'destructive',
+          onPress: () => {
+            deleteVehicle.mutate(id, {
+              onSuccess: () => router.back()
+            });
+          }
+        },
+      ]
     );
   }
 
@@ -134,9 +154,15 @@ export function VehicleDetailScreen({ id }: { id: string }) {
         <TouchableOpacity style={styles.glassBtn} onPress={() => router.back()} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.glassBtn} onPress={() => router.push(`/customer/vehicles/edit/${id}` as any)} activeOpacity={0.7}>
-          <Ionicons name="create-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.glassBtn} onPress={() => router.push(`/customer/vehicles/edit/${id}` as any)} activeOpacity={0.7}>
+            <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.glassBtn, { backgroundColor: 'rgba(220, 38, 38, 0.5)' }]} onPress={handleDelete} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── CONTENT (Overlaps Hero slightly) ── */}
@@ -263,6 +289,7 @@ const styles = StyleSheet.create((theme) => ({
   changePhotoText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
 
   floatingHeader: { position: 'absolute', top: 56, left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between', zIndex: 100 },
+  headerActions: { flexDirection: 'row', gap: 12 },
   glassBtn: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(26, 26, 46, 0.5)',
